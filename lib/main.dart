@@ -134,6 +134,8 @@ class _AlgParams extends ConsumerState<AlgParams>{
               ),
             ),
             onPressed: () {
+              ref.read(requestAnswerProvider).setQuery('set_params');
+              ref.read(requestAnswerProvider).setParamsMap(widget.properties);
               Navigator.push(context, MaterialPageRoute(builder: (context) => ProviderScope(child: ChartDashRoute(properties: widget.properties,))));
             },
           ),

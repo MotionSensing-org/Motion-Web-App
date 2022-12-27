@@ -27,6 +27,7 @@ class RequestHandler extends ChangeNotifier {
   List algorithms = [];
   List curAlgParams = [];
   List imus = ['8'];
+  Map paramsToSet = {};
   Map dataBuffer = {};
   Ref ref;
   Map checkpointDataBuffer = {};
@@ -55,7 +56,11 @@ class RequestHandler extends ChangeNotifier {
     Timer.periodic(const Duration(milliseconds: 100), updateDataSource);
   }
 
-  void getQuery(String query) {
+  void setParamsMap(Map params) {
+    paramsToSet = params;
+  }
+
+  void setQuery(String query) {
     this.query = "?request_type=$query";
   }
 
@@ -81,7 +86,7 @@ class RequestHandler extends ChangeNotifier {
   }
 
   void updateData(String query) async {
-    getQuery(query);
+    setQuery(query);
     switch (query) {
       case 'algorithms':
         getAlgList();
@@ -105,6 +110,13 @@ class RequestHandler extends ChangeNotifier {
     if(curAlgParams.isEmpty) {
       getAlgParams();
       notifyListeners();
+    }
+
+    if(query == '?request_type=set_params') {
+      var body = json.encode(paramsToSet);
+      await setParams(Uri.parse(url+query), body);
+      setQuery('raw_data');
+      return;
     }
 
     query = '?request_type=raw_data';
