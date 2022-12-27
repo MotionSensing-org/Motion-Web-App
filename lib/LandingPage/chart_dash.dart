@@ -25,6 +25,8 @@ class RequestHandler extends ChangeNotifier {
   String url;
   String query = "?request_type=";
   List algorithms = [];
+  List curAlgParams = [];
+  List imus = ['8'];
   Map dataBuffer = {};
   Ref ref;
   Map checkpointDataBuffer = {};
@@ -32,18 +34,18 @@ class RequestHandler extends ChangeNotifier {
 
   RequestHandler(this.url, this.ref) {
     getAlgList();
-    dataBuffer["ACC-X"] =
+    dataBuffer["ACC0-X"] =
     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    dataBuffer["ACC-Y"] =
+    dataBuffer["ACC0-Y"] =
     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    dataBuffer["ACC-Z"] =
+    dataBuffer["ACC0-Z"] =
     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
 
-    dataBuffer["GYRO-X"] =
+    dataBuffer["GYRO0-X"] =
     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    dataBuffer["GYRO-Y"] =
+    dataBuffer["GYRO0-Y"] =
     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    dataBuffer["GYRO-Z"] =
+    dataBuffer["GYRO0-Z"] =
     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
 
     dataBuffer.forEach((key, value) {
@@ -70,6 +72,14 @@ class RequestHandler extends ChangeNotifier {
     return true;
   }
 
+  Future<bool> getAlgParams() async {
+    query = '?request_type=get_params';
+    Map data = await getDecodedData();
+    curAlgParams = data['params'];
+
+    return true;
+  }
+
   void updateData(String query) async {
     getQuery(query);
     switch (query) {
@@ -92,10 +102,15 @@ class RequestHandler extends ChangeNotifier {
       return;
     }
 
+    if(curAlgParams.isEmpty) {
+      getAlgParams();
+      notifyListeners();
+    }
+
     query = '?request_type=raw_data';
 
     var data = await getData(Uri.parse(url + query));
-    var types = ['ACC', 'GYRO'];
+    var types = ['ACC0', 'GYRO0'];
     var axis = ['X', 'Y', 'Z'];
     var decodedData = jsonDecode(data);
     for (int i = 0; i < 2; i++) {
@@ -118,7 +133,7 @@ class RequestHandler extends ChangeNotifier {
         }
       }
 
-      if(!ref.read(playPauseProvider)._pause) {
+      if(!ref.read(playPauseProvider).pause) {
         dataBuffer.forEach((key, value) {
           checkpointDataBuffer[key] = value.toList();
         });
@@ -130,10 +145,10 @@ class RequestHandler extends ChangeNotifier {
 }
 
 class PlayPause extends ChangeNotifier {
-  bool _pause = false;
+  bool pause = false;
 
   void playPause() {
-    _pause = !_pause;
+    pause = !pause;
     notifyListeners();
   }
 }
@@ -153,36 +168,45 @@ class ChartCheckBox extends ChangeNotifier {
 
   void checkUncheck(String chartType) {
     switch(chartType) {
-      case 'ACC-X': {
+      case 'ACC0-X': {
         _isCheckedAcclX = !_isCheckedAcclX;
       }
       break;
 
-      case 'ACC-Y': {
+      case 'ACC0-Y': {
         _isCheckedAcclY = !_isCheckedAcclY;
       }
       break;
 
-      case 'ACC-Z': {
+      case 'ACC0-Z': {
         _isCheckedAcclZ = !_isCheckedAcclZ;
       }
       break;
 
-      case 'GYRO-X': {
+      case 'GYRO0-X': {
         _isCheckedGyroX = !_isCheckedGyroX;
       }
       break;
 
-      case 'GYRO-Y': {
+      case 'GYRO0-Y': {
         _isCheckedGyroY = !_isCheckedGyroY;
       }
       break;
 
-      case 'GYRO-Z': {
+      case 'GYRO0-Z': {
         _isCheckedGyroZ = !_isCheckedGyroZ;
       }
     }
 
+    notifyListeners();
+  }
+}
+
+class AlgListManager extends ChangeNotifier {
+  String chosenAlg = '';
+
+  void setChosenAlg(String alg) {
+    chosenAlg = alg;
     notifyListeners();
   }
 }
@@ -197,6 +221,10 @@ final playPauseProvider = ChangeNotifierProvider((ref) {
 
 final requestAnswerProvider = ChangeNotifierProvider((ref) {
   return RequestHandler('http://127.0.0.1:5000/', ref);
+});
+
+final chosenAlgorithmProvider = ChangeNotifierProvider((ref) {
+  return AlgListManager();
 });
 
 class DataChart extends ConsumerWidget {
@@ -242,6 +270,101 @@ class DataChart extends ConsumerWidget {
   }
 }
 
+class AlgParams extends ConsumerStatefulWidget{
+  Map properties;
+  AlgParams({super.key, required this.properties});
+
+  @override
+  ConsumerState<AlgParams> createState() => _AlgParams();
+}
+
+class _AlgParams extends ConsumerState<AlgParams>{
+  String? dropdownValue = '';
+  @override
+  Widget build(BuildContext context) {
+    List curAlgParams = ref.watch(requestAnswerProvider).curAlgParams;
+    String currentAlgorithm = ref.watch(chosenAlgorithmProvider).chosenAlg;
+    List<Widget> params = [];
+
+    if(currentAlgorithm != '') {
+      for(int i = 0; i < curAlgParams.length ;i++){
+        if(curAlgParams[i]['type'] == 'TextBox'){
+          if(!widget.properties.containsKey(curAlgParams[i]['param_name'])) {
+            widget.properties[curAlgParams[i]['param_name']] = curAlgParams[i]['default_value'];
+          }
+
+          params.add(Card(
+            color: Colors.white,
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
+            child: TextField(
+              onChanged: (value){
+                widget.properties[curAlgParams[i]['param_name']] = value;
+              },
+              decoration: InputDecoration(
+                labelText: curAlgParams[i]['param_name'],
+                border: const OutlineInputBorder(),
+                hintText: 'Enter a value',
+              ),
+            ),
+          )
+          );
+        } else {
+          if(curAlgParams[i]['type'] == 'CheckList') {
+            List vals = curAlgParams[i]['values'];
+            if(dropdownValue == '') {
+              dropdownValue = vals[curAlgParams[i]['default_value']];
+              widget.properties[curAlgParams[i]['param_name']] = dropdownValue;
+            }
+
+            params.add(
+              Column(
+                children: [
+                  Text(
+                    curAlgParams[i]['param_name'],
+                    style: const TextStyle(color: Colors.blue),
+                  ),
+                  Card(
+                    color: Colors.white,
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: DropdownButton(
+                          items: [for(int k = 0; k < vals.length; k++) DropdownMenuItem<String>(
+                            value: vals[k],
+                            child: Text(vals[k]),
+                          )],
+                          icon: const Icon(
+                            Icons.arrow_downward,
+                            color: Colors.blue,
+                          ),
+                          value: dropdownValue,
+                          underline: Container(
+                            color: Colors.blue,
+                            height: 3,
+                          ),
+                          style: const TextStyle(color: Colors.blue),
+                          onChanged: (String? value) {
+                            setState(() {
+                              dropdownValue = value;
+                              widget.properties[curAlgParams[i]['param_name']] = dropdownValue;
+                            });
+                          }
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+        }
+      }
+    }
+    return Column(
+      children: params,
+    );
+  }
+}
+
 class ChartDash extends ConsumerStatefulWidget{
   const ChartDash({super.key});
 
@@ -255,10 +378,10 @@ class _ChartDash extends ConsumerState<ChartDash> {
   int _key = 1;
   late List<Color> _dynamicBorders;
   late List algorithms;
-  String? dropdownValue='raw_data';
+  String? dropdownValue='';
 
   _ChartDash(){
-    charts = ['ACC-X', 'ACC-Y', 'ACC-Z', 'GYRO-X', 'GYRO-Y', 'GYRO-Z'];
+    charts = ['ACC0-X', 'ACC0-Y', 'ACC0-Z', 'GYRO0-X', 'GYRO0-Y', 'GYRO0-Z'];
     mainChart = DataChart(dataType: charts[0], key: ValueKey(_key),);
     _dynamicBorders = [for(int i = 0; i < charts.length; i++) Colors.transparent];
   }
@@ -277,169 +400,93 @@ class _ChartDash extends ConsumerState<ChartDash> {
 
   @override
   Widget build(BuildContext context) {
-    algorithms = ref.watch(requestAnswerProvider).algorithms;
-
     return LayoutBuilder(
       builder: (context, constraints) {
         return Container(
           color: Colors.lightBlue,
-          child: Row(
-            children: [
-              Expanded(
-                  flex: 1,
-                  child:  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10),
-                    child: Card(
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                      elevation: 20,
-                      color: Colors.lightBlueAccent,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Card(
-                              color: Colors.white,
-                              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: DropdownButton(
-                                    items: [for(int i = 0; i < algorithms.length; i++) DropdownMenuItem<String>(
-                                      value: algorithms[i],
-                                      child: Text(algorithms[i]),
-                                    )],
-                                    icon: const Icon(
-                                        Icons.arrow_downward,
-                                        color: Colors.blue,
-                                    ),
-                                    value: dropdownValue,
-                                    underline: Container(
-                                      color: Colors.blue,
-                                      height: 3,
-                                    ),
-                                    style: const TextStyle(color: Colors.blue),
-                                    onChanged: (String? value) {
-                                      setState(() {
-                                        dropdownValue = value;
-                                      });
-                                    }
-                                ),
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              ref.read(playPauseProvider).playPause();
-                            },
-                            style: ButtonStyle(
-                              shape: MaterialStateProperty.all(const CircleBorder()),
-                              padding: MaterialStateProperty.all(const EdgeInsets.all(20)),
-                              elevation: MaterialStateProperty.resolveWith<double?>((states) {
-                                return 10; // <-- Splash color
-                              }),
-                              backgroundColor: MaterialStateProperty.all(Colors.blue), // <-- Button color
-                              overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
-                                if (states.contains(MaterialState.pressed)) return Colors.lightBlueAccent; // <-- Splash color
-                                return Colors.blue;
-                              }),
-                            ),
-                            child: ref.watch(playPauseProvider)._pause
-                                ? const Icon(Icons.pause_outlined)
-                                : const Icon(Icons.play_arrow),
-                          ),
-                        ],
+          child: Column(
+            // color: Colors.lightBlueAccent,
+              children: [Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      Flexible(
+                          flex: 2,
+                          child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 800),
+                              transitionBuilder: (Widget child, Animation<double> animation) {
+                                return ScaleTransition(scale: animation, child: child);
+                              },
+                              child: mainChart
+                          )
                       ),
-                    ),
-                  )
-              ),
-              Expanded(
-                flex: 4,
-                child: Column(
-                  // color: Colors.lightBlueAccent,
-                    children: [Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          children: [
-                            Flexible(
-                                flex: 2,
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 800),
-                                    transitionBuilder: (Widget child, Animation<double> animation) {
-                                      return ScaleTransition(scale: animation, child: child);
-                                    },
-                                    child: mainChart
-                                )
-                            ),
-                            Flexible(
-                              flex: 1,
-                              child: Card(
-                                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                                elevation: 20,
-                                color: Colors.lightBlueAccent,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: ScrollConfiguration(
-                                    behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
-                                      //PointerDeviceKind.touch,
-                                      PointerDeviceKind.mouse,
-                                    },),
-                                    child: ListView(
-                                      scrollDirection: Axis.horizontal,
-                                      children: [
-                                        for(int i = 0; i< charts.length; i++) GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _key = (_key == 2 ? 1 : 2);
-                                              mainChart = DataChart(dataType: charts[i], key: ValueKey(_key));
-                                              for (int j = 0; j < charts.length; j++){
-                                                if (j == i){
-                                                  _dynamicBorders[j] = (_dynamicBorders[j] == Colors.transparent
-                                                      ? Colors.lightBlueAccent.shade100
-                                                      : Colors.transparent);
-                                                } else {
-                                                  _dynamicBorders[j] = Colors.transparent;
-                                                }
-                                              }
+                      Flexible(
+                        flex: 1,
+                        child: Card(
+                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                          elevation: 20,
+                          color: Colors.lightBlueAccent,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ScrollConfiguration(
+                              behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
+                                //PointerDeviceKind.touch,
+                                PointerDeviceKind.mouse,
+                              },),
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: [
+                                  for(int i = 0; i< charts.length; i++) GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _key = (_key == 2 ? 1 : 2);
+                                          mainChart = DataChart(dataType: charts[i], key: ValueKey(_key));
+                                          for (int j = 0; j < charts.length; j++){
+                                            if (j == i){
+                                              _dynamicBorders[j] = (_dynamicBorders[j] == Colors.transparent
+                                                  ? Colors.lightBlueAccent.shade100
+                                                  : Colors.transparent);
+                                            } else {
+                                              _dynamicBorders[j] = Colors.transparent;
+                                            }
+                                          }
 
-                                            });
-                                          },
-                                            child: Column(
-                                              children: [
-                                                Expanded(
-                                                    child: Padding(
-                                                      padding: const EdgeInsets.all(16.0),
-                                                      child: AnimatedContainer(
-                                                        decoration: BoxDecoration(
-                                                          border: Border.all(
+                                        });
+                                      },
+                                      child: Column(
+                                        children: [
+                                          Expanded(
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(16.0),
+                                                child: AnimatedContainer(
+                                                    decoration: BoxDecoration(
+                                                        border: Border.all(
                                                             width: 6,
                                                             color: _dynamicBorders[i]
-                                                          ) ,
-                                                          borderRadius: BorderRadius.all(Radius.circular(20)),
-                                                          color: Colors.white
-                                                        ),
-                                                        duration: const Duration(milliseconds: 800),
-                                                         child: DataChart(dataType: charts[i], key: ValueKey(_key))
-                                                      ),
-                                                    )
+                                                        ) ,
+                                                        borderRadius: const BorderRadius.all(Radius.circular(20)),
+                                                        color: Colors.white
+                                                    ),
+                                                    duration: const Duration(milliseconds: 800),
+                                                    child: DataChart(dataType: charts[i], key: ValueKey(_key))
                                                 ),
-                                              ],
-                                            )
-                                        )
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                                              )
+                                          ),
+                                        ],
+                                      )
+                                  )
+                                ],
                               ),
-                            )
-                          ],
+                            ),
+                          ),
                         ),
-                      ),
-                    )]
+                      )
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              )]
+          )
         );
       },
     );
