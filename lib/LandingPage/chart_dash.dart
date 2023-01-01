@@ -413,6 +413,10 @@ class _ChartDash extends ConsumerState<ChartDash> {
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
                     children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(widget.imu),
+                      ),
                       Flexible(
                           flex: 2,
                           child: AnimatedSwitcher(
