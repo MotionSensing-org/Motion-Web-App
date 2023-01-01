@@ -326,9 +326,10 @@ class DataChart extends ConsumerWidget {
   // final TooltipBehavior _tooltipBehavior = TooltipBehavior(enable: true);
   final _zoomPanBehavior =
   ZoomPanBehavior(enableMouseWheelZooming: true, enablePanning: true);
+  final String imu;
   final String dataType;
 
-  DataChart({Key? key, required this.dataType}) : super(key: key);
+  DataChart({Key? key, required this.imu, required this.dataType}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -367,7 +368,7 @@ class DataChart extends ConsumerWidget {
 
 class ChartDash extends ConsumerStatefulWidget{
   final String imu;
-  const ChartDash({required this.imu, super.key});
+  ChartDash({required this.imu, super.key});
 
   @override
   ConsumerState<ChartDash> createState() => _ChartDash();
@@ -375,7 +376,7 @@ class ChartDash extends ConsumerStatefulWidget{
 
 class _ChartDash extends ConsumerState<ChartDash> {
   late List charts;
-  late DataChart mainChart;
+  DataChart? mainChart;
   int _key = 1;
   late List<Color> _dynamicBorders;
   late List algorithms;
@@ -383,7 +384,6 @@ class _ChartDash extends ConsumerState<ChartDash> {
 
   _ChartDash(){
     charts = ['ACC-X', 'ACC-Y', 'ACC-Z', 'GYRO-X', 'GYRO-Y', 'GYRO-Z'];
-    mainChart = DataChart(dataType: charts[0], key: ValueKey(_key),);
     _dynamicBorders = [for(int i = 0; i < charts.length; i++) Colors.transparent];
   }
 
@@ -401,6 +401,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
 
   @override
   Widget build(BuildContext context) {
+    mainChart ??= DataChart(imu: widget.imu, dataType: charts[0], key: ValueKey(_key),);
     return LayoutBuilder(
       builder: (context, constraints) {
         return Container(
@@ -442,7 +443,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
                                       onTap: () {
                                         setState(() {
                                           _key = (_key == 2 ? 1 : 2);
-                                          mainChart = DataChart(dataType: charts[i], key: ValueKey(_key));
+                                          mainChart = DataChart(imu: widget.imu, dataType: charts[i], key: ValueKey(_key));
                                           for (int j = 0; j < charts.length; j++){
                                             if (j == i){
                                               _dynamicBorders[j] = (_dynamicBorders[j] == Colors.transparent
@@ -470,7 +471,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
                                                         color: Colors.white
                                                     ),
                                                     duration: const Duration(milliseconds: 800),
-                                                    child: DataChart(dataType: charts[i], key: ValueKey(_key))
+                                                    child: DataChart(imu: widget.imu, dataType: charts[i], key: ValueKey(_key))
                                                 ),
                                               )
                                           ),
