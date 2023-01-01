@@ -26,7 +26,7 @@ class RequestHandler extends ChangeNotifier {
   String query = "?request_type=";
   List algorithms = [];
   List curAlgParams = [];
-  List imus = ['8'];
+  List imus = [];
   Map paramsToSet = {};
   Map dataBuffer = {};
   Ref ref;
@@ -78,6 +78,14 @@ class RequestHandler extends ChangeNotifier {
     return true;
   }
 
+  Future<bool> getImus() async {
+    query = '?request_type=get_imus';
+    Map data = await getDecodedData();
+    imus = data['imus'];
+
+    return true;
+  }
+
   Future<bool> getAlgParams() async {
     query = '?request_type=get_params';
     Map data = await getDecodedData();
@@ -120,6 +128,11 @@ class RequestHandler extends ChangeNotifier {
       notifyListeners();
     }
 
+    if(imus.isEmpty) {
+      getImus();
+      notifyListeners();
+    }
+
     if(dataTypes.isEmpty) {
       await getDataTypes();
       notifyListeners();
@@ -158,7 +171,7 @@ class RequestHandler extends ChangeNotifier {
     var decodedData = jsonDecode(data);
     dataTypes.forEach((key, value) {
       for (var type in value) {
-        var strList = decodedData['0'][type]
+        var strList = decodedData['88:6B:0F:E1:D8:98'][type]
             .toString()
             .replaceAll(RegExp(r'[\[\],]'), '')
             .split(' ')
