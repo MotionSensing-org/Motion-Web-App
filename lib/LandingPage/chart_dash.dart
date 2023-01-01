@@ -31,27 +31,28 @@ class RequestHandler extends ChangeNotifier {
   Map dataBuffer = {};
   Ref ref;
   Map checkpointDataBuffer = {};
+  List dataTypes = [];
   final int bufferSize = 500;
 
   RequestHandler(this.url, this.ref) {
     getAlgList();
-    dataBuffer["ACC0-X"] =
-    Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    dataBuffer["ACC0-Y"] =
-    Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    dataBuffer["ACC0-Z"] =
-    Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-
-    dataBuffer["GYRO0-X"] =
-    Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    dataBuffer["GYRO0-Y"] =
-    Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    dataBuffer["GYRO0-Z"] =
-    Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-
-    dataBuffer.forEach((key, value) {
-      checkpointDataBuffer[key] = value.toList();
-    });
+    // dataBuffer["ACC0-X"] =
+    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+    // dataBuffer["ACC0-Y"] =
+    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+    // dataBuffer["ACC0-Z"] =
+    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+    //
+    // dataBuffer["GYRO0-X"] =
+    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+    // dataBuffer["GYRO0-Y"] =
+    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+    // dataBuffer["GYRO0-Z"] =
+    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+    //
+    // dataBuffer.forEach((key, value) {
+    //   checkpointDataBuffer[key] = value.toList();
+    // });
 
     Timer.periodic(const Duration(milliseconds: 100), updateDataSource);
   }
@@ -85,6 +86,14 @@ class RequestHandler extends ChangeNotifier {
     return true;
   }
 
+  Future<bool> getDataTypes() async {
+    query = '?request_type=get_data_types';
+    Map data = await getDecodedData();
+    dataTypes = data['data_types'];
+
+    return true;
+  }
+
   void updateData(String query) async {
     setQuery(query);
     switch (query) {
@@ -104,12 +113,27 @@ class RequestHandler extends ChangeNotifier {
     if(algorithms.isEmpty) {
       getAlgList();
       notifyListeners();
-      return;
     }
 
     if(curAlgParams.isEmpty) {
       getAlgParams();
       notifyListeners();
+    }
+
+    if(dataTypes.isEmpty) {
+      await getDataTypes();
+      notifyListeners();
+    }
+
+    if(dataBuffer.isEmpty) {
+      for (var type in dataTypes) {
+        dataBuffer[type] =
+            Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+      }
+
+      dataBuffer.forEach((key, value) {
+        checkpointDataBuffer[key] = value.toList();
+      });
     }
 
     if(query == '?request_type=set_params') {
