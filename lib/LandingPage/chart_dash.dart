@@ -139,12 +139,15 @@ class RequestHandler extends ChangeNotifier {
     }
 
     if(dataBuffer.isEmpty) {
-      dataTypes.forEach((key, value) {
-        for (var type in value) {
-          dataBuffer[type] =
-              Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-        }
-      });
+      for (var imu in imus) {
+        dataBuffer[imu] = {};
+        dataTypes.forEach((key, value) {
+          for (var type in value) {
+            dataBuffer[imu][type] =
+                Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+          }
+        });
+      }
 
       // for (var type in dataTypes) {
       //   dataBuffer[type] =
@@ -169,31 +172,33 @@ class RequestHandler extends ChangeNotifier {
     // var types = ['ACC', 'GYRO'];
     // var axis = ['X', 'Y', 'Z'];
     var decodedData = jsonDecode(data);
-    dataTypes.forEach((key, value) {
-      for (var type in value) {
-        var strList = decodedData['88:6B:0F:E1:D8:98'][type]
-            .toString()
-            .replaceAll(RegExp(r'[\[\],]'), '')
-            .split(' ')
-            .toList();
-        var rawDataList = strList
-            .map((x) => RawData(strList.indexOf(x), double.parse(x)))
-            .toList();
-        for (int k = 0; k < rawDataList.length; k++) {
-          rawDataList[k].setTimeStep = k;
-        }
+    for (var imu in imus) {
+      dataTypes.forEach((key, value) {
+        for (var type in value) {
+          var strList = decodedData[imu][type]
+              .toString()
+              .replaceAll(RegExp(r'[\[\],]'), '')
+              .split(' ')
+              .toList();
+          var rawDataList = strList
+              .map((x) => RawData(strList.indexOf(x), double.parse(x)))
+              .toList();
+          for (int k = 0; k < rawDataList.length; k++) {
+            rawDataList[k].setTimeStep = k;
+          }
 
-        dataBuffer[type].addAll(rawDataList);
-        while (dataBuffer[type].length > 500) {
-          dataBuffer[type].removeFirst();
+          dataBuffer[imu][type].addAll(rawDataList);
+          while (dataBuffer[imu][type].length > 500) {
+            dataBuffer[imu][type].removeFirst();
+          }
         }
-      }
-    });
-
-    if(!ref.read(playPauseProvider).pause) {
-      dataBuffer.forEach((key, value) {
-        checkpointDataBuffer[key] = value.toList();
       });
+
+      if(!ref.read(playPauseProvider).pause) {
+        dataBuffer[imu].forEach((key, value) {
+          checkpointDataBuffer[key] = value.toList();
+        });
+      }
     }
 
     notifyListeners();
