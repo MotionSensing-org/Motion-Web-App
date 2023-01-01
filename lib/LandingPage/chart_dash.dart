@@ -366,7 +366,8 @@ class DataChart extends ConsumerWidget {
 }
 
 class ChartDash extends ConsumerStatefulWidget{
-  const ChartDash({super.key});
+  final String imu;
+  const ChartDash({required this.imu, super.key});
 
   @override
   ConsumerState<ChartDash> createState() => _ChartDash();

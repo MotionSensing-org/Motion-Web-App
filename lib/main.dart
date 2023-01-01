@@ -231,12 +231,24 @@ class _DashControl extends ConsumerState<DashControl> {
 
 class ChartDashRoute extends ConsumerWidget {
   Map properties;
+  List imus = [];
   ChartDashRoute({Key? key, required this.properties}) : super(key: key);
+  Map chartDashboards = {};
+  String curImu = '';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     List<Widget> displayItems = [];
     List<Widget> algParams = [];
+    imus = ref.watch(requestAnswerProvider).imus;
+    for (var imu in imus) {
+      chartDashboards[imu] = ChartDash(imu: imu,);
+    }
+
+    if(curImu == '') {
+      curImu = imus[0];
+    }
+
     properties.forEach((key, value) {
       if(key == 'alg_name') {
         algParams.add(Padding(
@@ -336,9 +348,9 @@ class ChartDashRoute extends ConsumerWidget {
                 ),
               )
           ),
-          const Expanded(
+          Expanded(
               flex: 4,
-              child: ChartDash()
+              child: chartDashboards[curImu]
           )
         ],
       ),
