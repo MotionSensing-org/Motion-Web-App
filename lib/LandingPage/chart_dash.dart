@@ -31,7 +31,7 @@ class RequestHandler extends ChangeNotifier {
   Map dataBuffer = {};
   Ref ref;
   Map checkpointDataBuffer = {};
-  List dataTypes = [];
+  Map dataTypes = {};
   final int bufferSize = 500;
 
   RequestHandler(this.url, this.ref) {
@@ -126,10 +126,18 @@ class RequestHandler extends ChangeNotifier {
     }
 
     if(dataBuffer.isEmpty) {
-      for (var type in dataTypes) {
-        dataBuffer[type] =
-            Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-      }
+      dataTypes.forEach((key, value) {
+        for (var type in value) {
+          print(type);
+          dataBuffer[type] =
+              Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+        }
+      });
+
+      // for (var type in dataTypes) {
+      //   dataBuffer[type] =
+      //       Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+      // }
 
       dataBuffer.forEach((key, value) {
         checkpointDataBuffer[key] = value.toList();
@@ -146,7 +154,7 @@ class RequestHandler extends ChangeNotifier {
     query = '?request_type=raw_data';
 
     var data = await getData(Uri.parse(url + query));
-    var types = ['ACC0', 'GYRO0'];
+    var types = ['ACC', 'GYRO'];
     var axis = ['X', 'Y', 'Z'];
     var decodedData = jsonDecode(data);
     for (int i = 0; i < 2; i++) {
@@ -189,54 +197,54 @@ class PlayPause extends ChangeNotifier {
   }
 }
 
-class ChartCheckBox extends ChangeNotifier {
-  bool _isCheckedAcclX = true;
-  bool _isCheckedAcclY = true;
-  bool _isCheckedAcclZ = true;
-  bool _isCheckedGyroX = false;
-  bool _isCheckedGyroY = false;
-  bool _isCheckedGyroZ = false;
-
-  bool atLeastOneChecked() {
-    return _isCheckedAcclX ||  _isCheckedAcclY || _isCheckedAcclZ
-        || _isCheckedGyroX || _isCheckedGyroY || _isCheckedGyroZ;
-  }
-
-  void checkUncheck(String chartType) {
-    switch(chartType) {
-      case 'ACC0-X': {
-        _isCheckedAcclX = !_isCheckedAcclX;
-      }
-      break;
-
-      case 'ACC0-Y': {
-        _isCheckedAcclY = !_isCheckedAcclY;
-      }
-      break;
-
-      case 'ACC0-Z': {
-        _isCheckedAcclZ = !_isCheckedAcclZ;
-      }
-      break;
-
-      case 'GYRO0-X': {
-        _isCheckedGyroX = !_isCheckedGyroX;
-      }
-      break;
-
-      case 'GYRO0-Y': {
-        _isCheckedGyroY = !_isCheckedGyroY;
-      }
-      break;
-
-      case 'GYRO0-Z': {
-        _isCheckedGyroZ = !_isCheckedGyroZ;
-      }
-    }
-
-    notifyListeners();
-  }
-}
+// class ChartCheckBox extends ChangeNotifier {
+//   bool _isCheckedAcclX = true;
+//   bool _isCheckedAcclY = true;
+//   bool _isCheckedAcclZ = true;
+//   bool _isCheckedGyroX = false;
+//   bool _isCheckedGyroY = false;
+//   bool _isCheckedGyroZ = false;
+//
+//   bool atLeastOneChecked() {
+//     return _isCheckedAcclX ||  _isCheckedAcclY || _isCheckedAcclZ
+//         || _isCheckedGyroX || _isCheckedGyroY || _isCheckedGyroZ;
+//   }
+//
+//   void checkUncheck(String chartType) {
+//     switch(chartType) {
+//       case 'ACC0-X': {
+//         _isCheckedAcclX = !_isCheckedAcclX;
+//       }
+//       break;
+//
+//       case 'ACC0-Y': {
+//         _isCheckedAcclY = !_isCheckedAcclY;
+//       }
+//       break;
+//
+//       case 'ACC0-Z': {
+//         _isCheckedAcclZ = !_isCheckedAcclZ;
+//       }
+//       break;
+//
+//       case 'GYRO0-X': {
+//         _isCheckedGyroX = !_isCheckedGyroX;
+//       }
+//       break;
+//
+//       case 'GYRO0-Y': {
+//         _isCheckedGyroY = !_isCheckedGyroY;
+//       }
+//       break;
+//
+//       case 'GYRO0-Z': {
+//         _isCheckedGyroZ = !_isCheckedGyroZ;
+//       }
+//     }
+//
+//     notifyListeners();
+//   }
+// }
 
 class AlgListManager extends ChangeNotifier {
   String chosenAlg = '';
@@ -247,9 +255,9 @@ class AlgListManager extends ChangeNotifier {
   }
 }
 
-final checkBoxProvider = ChangeNotifierProvider((ref) {
-  return ChartCheckBox();
-});
+// final checkBoxProvider = ChangeNotifierProvider((ref) {
+//   return ChartCheckBox();
+// });
 
 final playPauseProvider = ChangeNotifierProvider((ref) {
   return PlayPause();
@@ -322,7 +330,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
   String? dropdownValue='';
 
   _ChartDash(){
-    charts = ['ACC0-X', 'ACC0-Y', 'ACC0-Z', 'GYRO0-X', 'GYRO0-Y', 'GYRO0-Z'];
+    charts = ['ACC-X', 'ACC-Y', 'ACC-Z', 'GYRO-X', 'GYRO-Y', 'GYRO-Z'];
     mainChart = DataChart(dataType: charts[0], key: ValueKey(_key),);
     _dynamicBorders = [for(int i = 0; i < charts.length; i++) Colors.transparent];
   }
