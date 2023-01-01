@@ -114,7 +114,7 @@ class RequestHandler extends ChangeNotifier {
   }
 
   List provideRawData(String dataType) {
-    return checkpointDataBuffer[dataType].toList();
+    return checkpointDataBuffer['88:6B:0F:E1:D8:98'][dataType].toList();
   }
 
   void updateDataSource(Timer timer) async {
@@ -154,8 +154,11 @@ class RequestHandler extends ChangeNotifier {
       //       Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
       // }
 
-      dataBuffer.forEach((key, value) {
-        checkpointDataBuffer[key] = value.toList();
+      dataBuffer.forEach((imu, imuData) {
+        checkpointDataBuffer[imu] = {};
+        dataBuffer[imu].forEach((dataType, data) {
+          checkpointDataBuffer[imu][dataType] = data.toList();
+        });
       });
     }
 
@@ -195,8 +198,10 @@ class RequestHandler extends ChangeNotifier {
       });
 
       if(!ref.read(playPauseProvider).pause) {
-        dataBuffer[imu].forEach((key, value) {
-          checkpointDataBuffer[key] = value.toList();
+        dataBuffer.forEach((imu, imuData) {
+          dataBuffer[imu].forEach((dataType, data) {
+            checkpointDataBuffer[imu][dataType] = data.toList();
+          });
         });
       }
     }
