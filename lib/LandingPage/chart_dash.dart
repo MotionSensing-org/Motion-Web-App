@@ -128,7 +128,6 @@ class RequestHandler extends ChangeNotifier {
     if(dataBuffer.isEmpty) {
       dataTypes.forEach((key, value) {
         for (var type in value) {
-          print(type);
           dataBuffer[type] =
               Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
         }
@@ -154,12 +153,12 @@ class RequestHandler extends ChangeNotifier {
     query = '?request_type=raw_data';
 
     var data = await getData(Uri.parse(url + query));
-    var types = ['ACC', 'GYRO'];
-    var axis = ['X', 'Y', 'Z'];
+    // var types = ['ACC', 'GYRO'];
+    // var axis = ['X', 'Y', 'Z'];
     var decodedData = jsonDecode(data);
-    for (int i = 0; i < 2; i++) {
-      for (int j = 0; j< 3; j++) {
-        var strList = decodedData['${types[i]}-${axis[j]}']
+    dataTypes.forEach((key, value) {
+      for (var type in value) {
+        var strList = decodedData['0'][type]
             .toString()
             .replaceAll(RegExp(r'[\[\],]'), '')
             .split(' ')
@@ -171,20 +170,49 @@ class RequestHandler extends ChangeNotifier {
           rawDataList[k].setTimeStep = k;
         }
 
-        dataBuffer['${types[i]}-${axis[j]}'].addAll(rawDataList);
-        while (dataBuffer['${types[i]}-${axis[j]}'].length > 500) {
-          dataBuffer['${types[i]}-${axis[j]}'].removeFirst();
+        dataBuffer[type].addAll(rawDataList);
+        while (dataBuffer[type].length > 500) {
+          dataBuffer[type].removeFirst();
         }
       }
+    });
 
-      if(!ref.read(playPauseProvider).pause) {
-        dataBuffer.forEach((key, value) {
-          checkpointDataBuffer[key] = value.toList();
-        });
-      }
-
-      notifyListeners();
+    if(!ref.read(playPauseProvider).pause) {
+      dataBuffer.forEach((key, value) {
+        checkpointDataBuffer[key] = value.toList();
+      });
     }
+
+    notifyListeners();
+
+    // for (int i = 0; i < 2; i++) {
+    //   for (int j = 0; j< 3; j++) {
+    //     var strList = decodedData['0']['${types[i]}-${axis[j]}']
+    //         .toString()
+    //         .replaceAll(RegExp(r'[\[\],]'), '')
+    //         .split(' ')
+    //         .toList();
+    //     var rawDataList = strList
+    //         .map((x) => RawData(strList.indexOf(x), double.parse(x)))
+    //         .toList();
+    //     for (int k = 0; k < rawDataList.length; k++) {
+    //       rawDataList[k].setTimeStep = k;
+    //     }
+    //
+    //     dataBuffer['${types[i]}-${axis[j]}'].addAll(rawDataList);
+    //     while (dataBuffer['${types[i]}-${axis[j]}'].length > 500) {
+    //       dataBuffer['${types[i]}-${axis[j]}'].removeFirst();
+    //     }
+    //   }
+    //
+    //   if(!ref.read(playPauseProvider).pause) {
+    //     dataBuffer.forEach((key, value) {
+    //       checkpointDataBuffer[key] = value.toList();
+    //     });
+    //   }
+    //
+    //   notifyListeners();
+    // }
   }
 }
 
