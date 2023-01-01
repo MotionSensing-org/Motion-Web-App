@@ -283,6 +283,32 @@ class ChartDashRoute extends ConsumerWidget {
           children: algParams,
         ),
       ),
+    ]);
+
+    for(var imu in imus) {
+      displayItems.add(
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Card(
+              color: Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+              child: TextButton(
+                child: Text(
+                  imu,
+                  style: const TextStyle(
+                      color: Colors.green
+                  ),
+                ),
+                onPressed: () {
+                  curImu = imu;
+                },
+              ),
+            ),
+          )
+      );
+    }
+
+    displayItems.addAll([
       Padding(
         padding: const EdgeInsets.all(8.0),
         child: ElevatedButton(
