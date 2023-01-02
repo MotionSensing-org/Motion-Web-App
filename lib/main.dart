@@ -193,11 +193,10 @@ class _DashControl extends ConsumerState<DashControl> {
       value: algorithms[i],
       child: Text(algorithms[i]),
     )];
-    algorithmsList.add(const DropdownMenuItem<String>(
-      value: '',
-      child: Text(''),
-    ));
 
+    if(dropdownValue == '') {
+      dropdownValue = algorithms[0];
+    }
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -336,7 +335,7 @@ class ChartDashRoute extends ConsumerWidget {
               ),
             ),
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.of(context).pushNamed('home');
             },
           ),
         ),
