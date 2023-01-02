@@ -113,8 +113,8 @@ class RequestHandler extends ChangeNotifier {
     }
   }
 
-  List provideRawData(String imu, String dataType) {
-    return checkpointDataBuffer[imu][dataType].toList();
+  Map provideRawData(String imu) {
+    return checkpointDataBuffer[imu];
   }
 
   void updateDataSource(Timer timer) async {
@@ -328,12 +328,29 @@ class DataChart extends ConsumerWidget {
   ZoomPanBehavior(enableMouseWheelZooming: true, enablePanning: true);
   final String imu;
   final String dataType;
-
+  Map dataTypes = {};
   DataChart({Key? key, required this.imu, required this.dataType}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var rawDataSource = ref.watch(requestAnswerProvider).provideRawData(imu, dataType);
+    dataTypes = ref.watch(requestAnswerProvider).dataTypes;
+    var rawDataSource = ref.watch(requestAnswerProvider).provideRawData(imu);
+    List<ChartSeries<dynamic, dynamic>> series = [];
+    for(var subType in dataTypes[dataType]) {
+      series.add(
+          SplineSeries(
+              dataSource: rawDataSource[subType].toList(),
+              name: subType,
+              enableTooltip: true,
+              // onRendererCreated: (ChartSeriesController controller) {
+              //   _chartSeriesController = controller;
+              // },
+              animationDuration: 0,
+              xValueMapper: (dynamic rD, _) => rD.timeStep,
+              yValueMapper: (dynamic rD, _) => rD.value
+          )
+      );
+    }
 
     return Card(
       // elevation: 20,
@@ -346,19 +363,7 @@ class DataChart extends ConsumerWidget {
         legend: Legend(isVisible: true),
         zoomPanBehavior: _zoomPanBehavior,
         // tooltipBehavior: _tooltipBehavior,
-        series: <ChartSeries>[
-          SplineSeries(
-              dataSource: rawDataSource,
-              name: dataType,
-              enableTooltip: true,
-              // onRendererCreated: (ChartSeriesController controller) {
-              //   _chartSeriesController = controller;
-              // },
-              animationDuration: 0,
-              xValueMapper: (dynamic rD, _) => rD.timeStep,
-              yValueMapper: (dynamic rD, _) => rD.value
-          )
-        ],
+        series: series,
         primaryXAxis:
         NumericAxis(edgeLabelPlacement: EdgeLabelPlacement.shift),
       ),
@@ -381,10 +386,10 @@ class _ChartDash extends ConsumerState<ChartDash> {
   late List<Color> _dynamicBorders;
   late List algorithms;
   String? dropdownValue='';
+  Map dataTypes = {};
 
   _ChartDash(){
     charts = ['ACC-X', 'ACC-Y', 'ACC-Z', 'GYRO-X', 'GYRO-Y', 'GYRO-Z'];
-    _dynamicBorders = [for(int i = 0; i < charts.length; i++) Colors.transparent];
   }
 
   Color getColor(Set<MaterialState> states) {
@@ -401,7 +406,11 @@ class _ChartDash extends ConsumerState<ChartDash> {
 
   @override
   Widget build(BuildContext context) {
-    mainChart ??= DataChart(imu: widget.imu, dataType: charts[0], key: ValueKey(_key),);
+    dataTypes = ref.watch(requestAnswerProvider).dataTypes;
+    List types = dataTypes.keys.toList();
+    _dynamicBorders = [for(int i = 0; i < types.length; i++) Colors.transparent];
+
+    mainChart ??= DataChart(imu: widget.imu, dataType: types[0], key: ValueKey(_key),);
     return LayoutBuilder(
       builder: (context, constraints) {
         return Container(
@@ -441,12 +450,12 @@ class _ChartDash extends ConsumerState<ChartDash> {
                               child: ListView(
                                 scrollDirection: Axis.horizontal,
                                 children: [
-                                  for(int i = 0; i< charts.length; i++) GestureDetector(
+                                  for(int i = 0; i< types.length; i++) GestureDetector(
                                       onTap: () {
                                         setState(() {
                                           _key = (_key == 2 ? 1 : 2);
-                                          mainChart = DataChart(imu: widget.imu, dataType: charts[i], key: ValueKey(_key));
-                                          for (int j = 0; j < charts.length; j++){
+                                          mainChart = DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key));
+                                          for (int j = 0; j < dataTypes.keys.toList().length; j++){
                                             if (j == i){
                                               _dynamicBorders[j] = (_dynamicBorders[j] == Colors.transparent
                                                   ? Colors.lightBlueAccent.shade100
@@ -473,7 +482,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
                                                         color: Colors.white
                                                     ),
                                                     duration: const Duration(milliseconds: 800),
-                                                    child: DataChart(imu: widget.imu, dataType: charts[i], key: ValueKey(_key))
+                                                    child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key))
                                                 ),
                                               )
                                           ),
