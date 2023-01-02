@@ -3,15 +3,32 @@ import 'package:iot_project/LandingPage/chart_dash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+class MyApp extends ConsumerWidget {
+  MyApp({super.key});
+  Map routes = {};
+  Map properties = {};
+  List imus = [];
+  Route<dynamic> generateRoute(RouteSettings settings) {
+    if(settings.name == 'home') {
+      return MaterialPageRoute(
+          settings: RouteSettings(name: settings.name),
+          builder: (context) => ProviderScope(child: MyHomePage(properties: properties,))
+      );
+    }
+    return MaterialPageRoute(
+        settings: RouteSettings(name: settings.name),
+        builder: (context) => ProviderScope(child: ChartDashRoute(properties: properties, imu: settings.name!,))
+    );
+  }
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    List imus = ref.watch(requestAnswerProvider).imus;
+
+
     return MaterialApp(
       title: 'Motion Sensing',
       theme: ThemeData(
@@ -27,7 +44,9 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.green,
         fontFamily: "Arial"
       ),
-      home: ProviderScope(child: MyHomePage()),
+      home: ProviderScope(child: MyHomePage(properties: properties,)),
+      initialRoute: 'home',
+      onGenerateRoute: generateRoute,
     );
   }
 }
@@ -42,11 +61,17 @@ class AlgParams extends ConsumerStatefulWidget{
 
 class _AlgParams extends ConsumerState<AlgParams>{
   String? dropdownValue = '';
+  Map imuDashboards = {};
+
   @override
   Widget build(BuildContext context) {
     List curAlgParams = ref.watch(requestAnswerProvider).curAlgParams;
     String currentAlgorithm = ref.watch(chosenAlgorithmProvider).chosenAlg;
     List<Widget> params = [];
+    List imus = ref.watch(requestAnswerProvider).imus;
+    for (var imu in imus) {
+      imuDashboards[imu] = (context) => ProviderScope(child: ChartDashRoute(imu: imu, properties: widget.properties));
+    }
 
     if(currentAlgorithm != '') {
       for(int i = 0; i < curAlgParams.length ;i++){
@@ -136,7 +161,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
             onPressed: () {
               ref.read(requestAnswerProvider).setQuery('set_params');
               ref.read(requestAnswerProvider).setParamsMap(widget.properties);
-              Navigator.push(context, MaterialPageRoute(builder: (context) => ProviderScope(child: ChartDashRoute(properties: widget.properties,))));
+              Navigator.of(context).pushNamed(imus[0]);
             },
           ),
         )
@@ -158,6 +183,7 @@ class DashControl extends ConsumerStatefulWidget{
 class _DashControl extends ConsumerState<DashControl> {
   late List algorithms;
   String? dropdownValue='';
+
 
   @override
   Widget build(BuildContext context) {
@@ -231,24 +257,15 @@ class _DashControl extends ConsumerState<DashControl> {
 
 class ChartDashRoute extends ConsumerWidget {
   Map properties;
-  List imus = [];
-  ChartDashRoute({Key? key, required this.properties}) : super(key: key);
+  ChartDashRoute({Key? key, required this.imu, required this.properties}) : super(key: key);
   Map chartDashboards = {};
-  String curImu = '';
+  final String imu;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     List<Widget> displayItems = [];
     List<Widget> algParams = [];
-    imus = ref.watch(requestAnswerProvider).imus;
-    for (var imu in imus) {
-      chartDashboards[imu] = ChartDash(imu: imu,);
-    }
-
-    if(curImu == '') {
-      curImu = imus[0];
-    }
-
+    List imus = ref.watch(requestAnswerProvider).imus;
     properties.forEach((key, value) {
       if(key == 'alg_name') {
         algParams.add(Padding(
@@ -326,6 +343,28 @@ class ChartDashRoute extends ConsumerWidget {
       )
     ]);
 
+    for(var imu in imus) {
+      displayItems.add(
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Card(
+              color: Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+              child: TextButton(
+                child: Text(
+                  imu,
+                  style: const TextStyle(
+                      color: Colors.green
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pushNamed(imu);
+                },
+              ),
+            ),
+          )
+      );
+    }
     return Container(
       color: Colors.lightBlue,
       child: Row(
@@ -350,7 +389,7 @@ class ChartDashRoute extends ConsumerWidget {
           ),
           Expanded(
               flex: 4,
-              child: chartDashboards[curImu]
+              child: ChartDash(imu: imu,)
           )
         ],
       ),
@@ -360,8 +399,8 @@ class ChartDashRoute extends ConsumerWidget {
 
 
 class MyHomePage extends StatelessWidget {
-  MyHomePage({super.key});
-  Map properties = {};
+  MyHomePage({super.key, required this.properties});
+  Map properties;
 
   @override
   Widget build(BuildContext context) {

@@ -113,8 +113,8 @@ class RequestHandler extends ChangeNotifier {
     }
   }
 
-  List provideRawData(String dataType) {
-    return checkpointDataBuffer['88:6B:0F:E1:D8:98'][dataType].toList();
+  List provideRawData(String imu, String dataType) {
+    return checkpointDataBuffer[imu][dataType].toList();
   }
 
   void updateDataSource(Timer timer) async {
@@ -333,7 +333,7 @@ class DataChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var rawDataSource = ref.watch(requestAnswerProvider).provideRawData(dataType);
+    var rawDataSource = ref.watch(requestAnswerProvider).provideRawData(imu, dataType);
 
     return Card(
       // elevation: 20,
@@ -408,7 +408,9 @@ class _ChartDash extends ConsumerState<ChartDash> {
           color: Colors.lightBlue,
           child: Column(
             // color: Colors.lightBlueAccent,
-              children: [Expanded(
+              children: [
+                Text(widget.imu),
+                Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
