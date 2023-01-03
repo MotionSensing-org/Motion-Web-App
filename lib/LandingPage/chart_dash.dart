@@ -380,17 +380,13 @@ class ChartDash extends ConsumerStatefulWidget{
 }
 
 class _ChartDash extends ConsumerState<ChartDash> {
-  late List charts;
   DataChart? mainChart;
   int _key = 1;
-  late List<Color> _dynamicBorders;
+  List<Color> _dynamicBorders = [];
+  Color highlightedBorder = Colors.lightBlueAccent.shade100;
   late List algorithms;
   String? dropdownValue='';
   Map dataTypes = {};
-
-  _ChartDash(){
-    charts = ['ACC-X', 'ACC-Y', 'ACC-Z', 'GYRO-X', 'GYRO-Y', 'GYRO-Z'];
-  }
 
   Color getColor(Set<MaterialState> states) {
     const Set<MaterialState> interactiveStates = <MaterialState>{
@@ -408,7 +404,10 @@ class _ChartDash extends ConsumerState<ChartDash> {
   Widget build(BuildContext context) {
     dataTypes = ref.watch(requestAnswerProvider).dataTypes;
     List types = dataTypes.keys.toList();
-    _dynamicBorders = [for(int i = 0; i < types.length; i++) Colors.transparent];
+    if(_dynamicBorders.isEmpty) {
+      _dynamicBorders = [for(int i = 0; i < types.length; i++) Colors.transparent];
+      _dynamicBorders[0] = highlightedBorder;
+    }
 
     mainChart ??= DataChart(imu: widget.imu, dataType: types[0], key: ValueKey(_key),);
     return LayoutBuilder(
@@ -418,7 +417,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
           child: Column(
             // color: Colors.lightBlueAccent,
               children: [
-                Text(widget.imu),
+                // Text(widget.imu),
                 Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -455,11 +454,9 @@ class _ChartDash extends ConsumerState<ChartDash> {
                                         setState(() {
                                           _key = (_key == 2 ? 1 : 2);
                                           mainChart = DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key));
-                                          for (int j = 0; j < dataTypes.keys.toList().length; j++){
+                                          for (int j = 0; j < types.length; j++){
                                             if (j == i){
-                                              _dynamicBorders[j] = (_dynamicBorders[j] == Colors.transparent
-                                                  ? Colors.lightBlueAccent.shade100
-                                                  : Colors.transparent);
+                                              _dynamicBorders[j] = highlightedBorder;
                                             } else {
                                               _dynamicBorders[j] = Colors.transparent;
                                             }

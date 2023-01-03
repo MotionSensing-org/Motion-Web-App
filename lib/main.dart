@@ -26,7 +26,6 @@ class MyApp extends ConsumerWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    List imus = ref.watch(requestAnswerProvider).imus;
 
 
     return MaterialApp(
@@ -108,7 +107,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
                 children: [
                   Text(
                     curAlgParams[i]['param_name'],
-                    style: const TextStyle(color: Colors.blue),
+                    style: const TextStyle(color: Colors.white),
                   ),
                   Card(
                     color: Colors.white,
@@ -149,13 +148,13 @@ class _AlgParams extends ConsumerState<AlgParams>{
 
     params.add(
         Card(
-          color: Colors.white,
+          color: Colors.green,
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
           child: TextButton(
             child: const Text(
               'Start',
               style: TextStyle(
-                color: Colors.green
+                color: Colors.white
               ),
             ),
             onPressed: () {
@@ -196,7 +195,7 @@ class _DashControl extends ConsumerState<DashControl> {
 
     if(dropdownValue == '') {
       dropdownValue = algorithms[0];
-    }
+    } 
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -204,37 +203,57 @@ class _DashControl extends ConsumerState<DashControl> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Card(
-            color: Colors.white,
             shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: DropdownButton(
-                  items: algorithmsList,
-                  icon: const Icon(
-                    Icons.arrow_downward,
-                    color: Colors.blue,
+            color: Colors.blue,
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                      'Please choose an algorithm:',
+                    style: TextStyle(
+                        color: Colors.white
+                    ),
                   ),
-                  value: dropdownValue,
-                  underline: Container(
-                    color: Colors.blue,
-                    height: 3,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Card(
+                    color: Colors.white,
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: DropdownButton(
+                          items: algorithmsList,
+                          icon: const Icon(
+                            Icons.arrow_downward,
+                            color: Colors.blue,
+                          ),
+                          value: dropdownValue,
+                          underline: Container(
+                            color: Colors.blue,
+                            height: 3,
+                          ),
+                          style: const TextStyle(color: Colors.blue),
+                          onChanged: (String? value) {
+                            setState(() {
+                              dropdownValue = value;
+                              widget.properties['alg_name'] = value;
+                              ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
+                            });
+                          }
+                      ),
+                    ),
                   ),
-                  style: const TextStyle(color: Colors.blue),
-                  onChanged: (String? value) {
-                    setState(() {
-                      dropdownValue = value;
-                      widget.properties['alg_name'] = value;
-                      ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
-                    });
-                  }
-              ),
+                ),
+              ],
             ),
           ),
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Card(
-              color: Colors.lightBlueAccent.shade100,
+              color: Colors.blue,
               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
               child:  Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -256,15 +275,19 @@ class _DashControl extends ConsumerState<DashControl> {
 
 class ChartDashRoute extends ConsumerWidget {
   Map properties;
+  Color selectedImuColor = Colors.green;
+  Color notSelectedImuColor = Colors.grey;
   ChartDashRoute({Key? key, required this.imu, required this.properties}) : super(key: key);
   Map chartDashboards = {};
   final String imu;
+
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     List<Widget> displayItems = [];
     List<Widget> algParams = [];
     List imus = ref.watch(requestAnswerProvider).imus;
+
     properties.forEach((key, value) {
       if(key == 'alg_name') {
         algParams.add(Padding(
@@ -272,7 +295,7 @@ class ChartDashRoute extends ConsumerWidget {
           child: Text(
               value,
             style: const TextStyle(
-              color: Colors.blue,
+              color: Colors.white,
               fontSize: 20
             ),
           ),
@@ -283,7 +306,7 @@ class ChartDashRoute extends ConsumerWidget {
           child: Text(
               '$key: $value',
               style: const TextStyle(
-                  color: Colors.blue,
+                  color: Colors.white,
                   // fontSize: 20
               )
           ),
@@ -293,7 +316,7 @@ class ChartDashRoute extends ConsumerWidget {
 
     displayItems.addAll([
       Card(
-        color: Colors.white,
+        color: Colors.blue,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
         child: Column(
           children: algParams,
@@ -325,13 +348,13 @@ class ChartDashRoute extends ConsumerWidget {
       Padding(
         padding: const EdgeInsets.all(8.0),
         child: Card(
-          color: Colors.white,
+          color: Colors.red,
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
           child: TextButton(
             child: const Text(
               'Stop',
               style: TextStyle(
-                  color: Colors.red
+                  color: Colors.white
               ),
             ),
             onPressed: () {
@@ -342,22 +365,30 @@ class ChartDashRoute extends ConsumerWidget {
       )
     ]);
 
-    for(var imu in imus) {
+    for(var imuName in imus) {
       displayItems.add(
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Card(
-              color: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+            child: Container(
+              decoration: BoxDecoration(
+                  border: Border.all(
+                      width: 2,
+                      color: Colors.grey
+                  ) ,
+                  borderRadius: const BorderRadius.all(Radius.circular(10)),
+                  color: Colors.white
+              ),
+              // color: Colors.white,
+              // shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
               child: TextButton(
                 child: Text(
-                  imu,
-                  style: const TextStyle(
-                      color: Colors.green
+                  imuName,
+                  style: TextStyle(
+                      color: (imuName == imu) ? selectedImuColor : notSelectedImuColor
                   ),
                 ),
                 onPressed: () {
-                  Navigator.of(context).pushNamed(imu);
+                  Navigator.of(context).pushNamed(imuName);
                 },
               ),
             ),
@@ -375,7 +406,7 @@ class ChartDashRoute extends ConsumerWidget {
                 child: Card(
                   shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
                   elevation: 10,
-                  color: Colors.lightBlueAccent,
+                  color: Colors.white,
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Column(
@@ -415,11 +446,11 @@ class MyHomePage extends StatelessWidget {
                   child: Card(
                     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
                     elevation: 20,
-                    color: Colors.lightBlueAccent,
+                    color: Colors.white,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        DashControl(properties: properties,),
+                        Expanded(child: DashControl(properties: properties,)),
                       ],
                     ),
                   ),
