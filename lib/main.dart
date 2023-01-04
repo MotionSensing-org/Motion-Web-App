@@ -193,7 +193,7 @@ class _DashControl extends ConsumerState<DashControl> {
       child: Text(algorithms[i]),
     )];
 
-    if(dropdownValue == '') {
+    if(dropdownValue == '' && algorithms.isNotEmpty) {
       dropdownValue = algorithms[0];
     } 
 
