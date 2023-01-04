@@ -36,26 +36,6 @@ class RequestHandler extends ChangeNotifier {
   final int bufferSize = 500;
 
   RequestHandler(this.url, this.ref) {
-    // getAlgList();
-    // getCurAlg();
-    // dataBuffer["ACC0-X"] =
-    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    // dataBuffer["ACC0-Y"] =
-    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    // dataBuffer["ACC0-Z"] =
-    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    //
-    // dataBuffer["GYRO0-X"] =
-    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    // dataBuffer["GYRO0-Y"] =
-    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    // dataBuffer["GYRO0-Z"] =
-    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    //
-    // dataBuffer.forEach((key, value) {
-    //   checkpointDataBuffer[key] = value.toList();
-    // });
-
     Timer.periodic(const Duration(milliseconds: 100), updateDataSource);
   }
 
@@ -129,22 +109,22 @@ class RequestHandler extends ChangeNotifier {
 
   void updateDataSource(Timer timer) async {
     if(algorithms.isEmpty) {
-      getAlgList();
+      await getAlgList();
       notifyListeners();
     }
 
     if(curAlgParams.isEmpty) {
-      getAlgParams();
+      await getAlgParams();
       notifyListeners();
     }
 
     if(imus.isEmpty) {
-      getImus();
+      await getImus();
       notifyListeners();
     }
 
     if(curAlg == '') {
-      getCurAlg();
+      await getCurAlg();
       notifyListeners();
     }
 
@@ -343,8 +323,10 @@ class DataChart extends ConsumerWidget {
   ZoomPanBehavior(enableMouseWheelZooming: true, enablePanning: true);
   final String imu;
   final String dataType;
+  bool isMainChart;
+  Color mainChartColor;
   Map dataTypes = {};
-  DataChart({Key? key, required this.imu, required this.dataType}) : super(key: key);
+  DataChart({Key? key, required this.imu, required this.dataType,  this.isMainChart=false,  this.mainChartColor=Colors.white}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -367,21 +349,35 @@ class DataChart extends ConsumerWidget {
       );
     }
 
-    return Card(
-      // elevation: 20,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-      color: Colors.white,
-      child: SfCartesianChart(
-        title: ChartTitle(
-            text: dataType
+    if(isMainChart) {
+      return Card(
+        // elevation: 20,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+        color: mainChartColor,
+        child: SfCartesianChart(
+          title: ChartTitle(
+              text: dataType
+          ),
+          legend: Legend(isVisible: true),
+          zoomPanBehavior: _zoomPanBehavior,
+          // tooltipBehavior: _tooltipBehavior,
+          series: series,
+          primaryXAxis:
+          NumericAxis(edgeLabelPlacement: EdgeLabelPlacement.shift),
         ),
-        legend: Legend(isVisible: true),
-        zoomPanBehavior: _zoomPanBehavior,
-        // tooltipBehavior: _tooltipBehavior,
-        series: series,
-        primaryXAxis:
-        NumericAxis(edgeLabelPlacement: EdgeLabelPlacement.shift),
+      );
+    }
+
+    return SfCartesianChart(
+      title: ChartTitle(
+          text: dataType
       ),
+      legend: Legend(isVisible: true),
+      zoomPanBehavior: _zoomPanBehavior,
+      // tooltipBehavior: _tooltipBehavior,
+      series: series,
+      primaryXAxis:
+      NumericAxis(edgeLabelPlacement: EdgeLabelPlacement.shift),
     );
   }
 }
@@ -424,7 +420,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
       _dynamicBorders[0] = highlightedBorder;
     }
 
-    mainChart ??= DataChart(imu: widget.imu, dataType: types[0], key: ValueKey(_key),);
+    mainChart ??= DataChart(imu: widget.imu, dataType: types[0], key: ValueKey(_key), isMainChart: true, mainChartColor: Colors.white,);
     return LayoutBuilder(
       builder: (context, constraints) {
         return Container(
@@ -441,7 +437,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
                       Flexible(
                           flex: 2,
                           child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 800),
+                              duration: const Duration(milliseconds: 400),
                               transitionBuilder: (Widget child, Animation<double> animation) {
                                 return ScaleTransition(scale: animation, child: child);
                               },
@@ -468,7 +464,12 @@ class _ChartDash extends ConsumerState<ChartDash> {
                                       onTap: () {
                                         setState(() {
                                           _key = (_key == 2 ? 1 : 2);
-                                          mainChart = DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key));
+                                          mainChart = DataChart(
+                                            imu: widget.imu,
+                                            dataType: types[i],
+                                            key: ValueKey(_key),
+                                            isMainChart: true,
+                                            mainChartColor: Colors.white,);
                                           for (int j = 0; j < types.length; j++){
                                             if (j == i){
                                               _dynamicBorders[j] = highlightedBorder;
