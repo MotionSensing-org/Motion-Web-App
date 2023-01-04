@@ -317,23 +317,28 @@ final chosenAlgorithmProvider = ChangeNotifierProvider((ref) {
   return AlgListManager();
 });
 
-class DataChart extends ConsumerWidget {
+class DataChart extends ConsumerStatefulWidget{
+  final String imu;
+  final String dataType;
+  final bool isMainChart;
+  final Color mainChartColor;
+  @override
+  ConsumerState<DataChart> createState() => _DataChart();
+  const DataChart({Key? key, required this.imu, required this.dataType,  this.isMainChart=false,  this.mainChartColor=Colors.white}) : super(key: key);
+}
+
+class _DataChart extends ConsumerState<DataChart> {
   // final TooltipBehavior _tooltipBehavior = TooltipBehavior(enable: true);
   final _zoomPanBehavior =
   ZoomPanBehavior(enableMouseWheelZooming: true, enablePanning: true);
-  final String imu;
-  final String dataType;
-  bool isMainChart;
-  Color mainChartColor;
   Map dataTypes = {};
-  DataChart({Key? key, required this.imu, required this.dataType,  this.isMainChart=false,  this.mainChartColor=Colors.white}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     dataTypes = ref.watch(requestAnswerProvider).dataTypes;
-    var rawDataSource = ref.watch(requestAnswerProvider).provideRawData(imu);
+    var rawDataSource = ref.watch(requestAnswerProvider).provideRawData(widget.imu);
     List<ChartSeries<dynamic, dynamic>> series = [];
-    for(var subType in dataTypes[dataType]) {
+    for(var subType in dataTypes[widget.dataType]) {
       series.add(
           SplineSeries(
               dataSource: rawDataSource[subType].toList(),
@@ -349,14 +354,14 @@ class DataChart extends ConsumerWidget {
       );
     }
 
-    if(isMainChart) {
+    if(widget.isMainChart) {
       return Card(
         // elevation: 20,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-        color: mainChartColor,
+        color: widget.mainChartColor,
         child: SfCartesianChart(
           title: ChartTitle(
-              text: dataType
+              text: widget.dataType
           ),
           legend: Legend(isVisible: true),
           zoomPanBehavior: _zoomPanBehavior,
@@ -370,7 +375,7 @@ class DataChart extends ConsumerWidget {
 
     return SfCartesianChart(
       title: ChartTitle(
-          text: dataType
+          text: widget.dataType
       ),
       legend: Legend(isVisible: true),
       zoomPanBehavior: _zoomPanBehavior,
@@ -384,7 +389,7 @@ class DataChart extends ConsumerWidget {
 
 class ChartDash extends ConsumerStatefulWidget{
   final String imu;
-  ChartDash({required this.imu, super.key});
+  const ChartDash({required this.imu, super.key});
 
   @override
   ConsumerState<ChartDash> createState() => _ChartDash();
