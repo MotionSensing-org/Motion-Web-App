@@ -24,6 +24,7 @@ class RawData {
 class RequestHandler extends ChangeNotifier {
   String url;
   String query = "?request_type=";
+  String curAlg = '';
   List algorithms = [];
   List curAlgParams = [];
   List imus = [];
@@ -35,7 +36,8 @@ class RequestHandler extends ChangeNotifier {
   final int bufferSize = 500;
 
   RequestHandler(this.url, this.ref) {
-    getAlgList();
+    // getAlgList();
+    // getCurAlg();
     // dataBuffer["ACC0-X"] =
     //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
     // dataBuffer["ACC0-Y"] =
@@ -94,6 +96,14 @@ class RequestHandler extends ChangeNotifier {
     return true;
   }
 
+  Future<bool> getCurAlg() async {
+    query = '?request_type=get_cur_alg';
+    Map data = await getDecodedData();
+    curAlg = data['cur_alg'];
+
+    return true;
+  }
+
   Future<bool> getDataTypes() async {
     query = '?request_type=get_data_types';
     Map data = await getDecodedData();
@@ -133,6 +143,11 @@ class RequestHandler extends ChangeNotifier {
       notifyListeners();
     }
 
+    if(curAlg == '') {
+      getCurAlg();
+      notifyListeners();
+    }
+
     if(dataTypes.isEmpty) {
       await getDataTypes();
       notifyListeners();
@@ -165,11 +180,11 @@ class RequestHandler extends ChangeNotifier {
     if(query == '?request_type=set_params') {
       var body = json.encode(paramsToSet);
       await setParams(Uri.parse(url+query), body);
-      setQuery('raw_data');
+      setQuery(curAlg);
       return;
     }
 
-    query = '?request_type=raw_data';
+    query = '?request_type=$curAlg';
 
     var data = await getData(Uri.parse(url + query));
     // var types = ['ACC', 'GYRO'];
