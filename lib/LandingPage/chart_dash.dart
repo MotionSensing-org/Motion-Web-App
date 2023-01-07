@@ -310,7 +310,7 @@ final playPauseProvider = ChangeNotifierProvider((ref) {
 });
 
 final requestAnswerProvider = ChangeNotifierProvider((ref) {
-  return RequestHandler('http://127.0.0.1:5000/', ref);
+  return RequestHandler('http://127.0.0.1:8080/', ref);
 });
 
 final chosenAlgorithmProvider = ChangeNotifierProvider((ref) {
