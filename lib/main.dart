@@ -331,9 +331,6 @@ class ChartDashRoute extends ConsumerWidget {
           style: ButtonStyle(
             shape: MaterialStateProperty.all(const CircleBorder()),
             padding: MaterialStateProperty.all(const EdgeInsets.all(20)),
-            // elevation: MaterialStateProperty.resolveWith<double?>((states) {
-            //   return 10; // <-- Splash color
-            // }),
             backgroundColor: MaterialStateProperty.all(Colors.blue), // <-- Button color
             overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
               if (states.contains(MaterialState.pressed)) return Colors.lightBlueAccent; // <-- Splash color
@@ -378,8 +375,6 @@ class ChartDashRoute extends ConsumerWidget {
                   borderRadius: const BorderRadius.all(Radius.circular(10)),
                   color: Colors.white
               ),
-              // color: Colors.white,
-              // shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
               child: TextButton(
                 child: Text(
                   imuName,

@@ -18,9 +18,6 @@ class RawData {
   }
 }
 
-// IMU request types:
-//   "raw_data"
-// TODO: add algorithm requests
 class RequestHandler extends ChangeNotifier {
   String url;
   String query = "?request_type=";
@@ -144,11 +141,6 @@ class RequestHandler extends ChangeNotifier {
         });
       }
 
-      // for (var type in dataTypes) {
-      //   dataBuffer[type] =
-      //       Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-      // }
-
       dataBuffer.forEach((imu, imuData) {
         checkpointDataBuffer[imu] = {};
         dataBuffer[imu].forEach((dataType, data) {
@@ -167,8 +159,6 @@ class RequestHandler extends ChangeNotifier {
     query = '?request_type=$curAlg';
 
     var data = await getData(Uri.parse(url + query));
-    // var types = ['ACC', 'GYRO'];
-    // var axis = ['X', 'Y', 'Z'];
     var decodedData = jsonDecode(data);
     for (var imu in imus) {
       dataTypes.forEach((key, value) {
@@ -202,35 +192,6 @@ class RequestHandler extends ChangeNotifier {
     }
 
     notifyListeners();
-
-    // for (int i = 0; i < 2; i++) {
-    //   for (int j = 0; j< 3; j++) {
-    //     var strList = decodedData['0']['${types[i]}-${axis[j]}']
-    //         .toString()
-    //         .replaceAll(RegExp(r'[\[\],]'), '')
-    //         .split(' ')
-    //         .toList();
-    //     var rawDataList = strList
-    //         .map((x) => RawData(strList.indexOf(x), double.parse(x)))
-    //         .toList();
-    //     for (int k = 0; k < rawDataList.length; k++) {
-    //       rawDataList[k].setTimeStep = k;
-    //     }
-    //
-    //     dataBuffer['${types[i]}-${axis[j]}'].addAll(rawDataList);
-    //     while (dataBuffer['${types[i]}-${axis[j]}'].length > 500) {
-    //       dataBuffer['${types[i]}-${axis[j]}'].removeFirst();
-    //     }
-    //   }
-    //
-    //   if(!ref.read(playPauseProvider).pause) {
-    //     dataBuffer.forEach((key, value) {
-    //       checkpointDataBuffer[key] = value.toList();
-    //     });
-    //   }
-    //
-    //   notifyListeners();
-    // }
   }
 }
 
@@ -243,55 +204,6 @@ class PlayPause extends ChangeNotifier {
   }
 }
 
-// class ChartCheckBox extends ChangeNotifier {
-//   bool _isCheckedAcclX = true;
-//   bool _isCheckedAcclY = true;
-//   bool _isCheckedAcclZ = true;
-//   bool _isCheckedGyroX = false;
-//   bool _isCheckedGyroY = false;
-//   bool _isCheckedGyroZ = false;
-//
-//   bool atLeastOneChecked() {
-//     return _isCheckedAcclX ||  _isCheckedAcclY || _isCheckedAcclZ
-//         || _isCheckedGyroX || _isCheckedGyroY || _isCheckedGyroZ;
-//   }
-//
-//   void checkUncheck(String chartType) {
-//     switch(chartType) {
-//       case 'ACC0-X': {
-//         _isCheckedAcclX = !_isCheckedAcclX;
-//       }
-//       break;
-//
-//       case 'ACC0-Y': {
-//         _isCheckedAcclY = !_isCheckedAcclY;
-//       }
-//       break;
-//
-//       case 'ACC0-Z': {
-//         _isCheckedAcclZ = !_isCheckedAcclZ;
-//       }
-//       break;
-//
-//       case 'GYRO0-X': {
-//         _isCheckedGyroX = !_isCheckedGyroX;
-//       }
-//       break;
-//
-//       case 'GYRO0-Y': {
-//         _isCheckedGyroY = !_isCheckedGyroY;
-//       }
-//       break;
-//
-//       case 'GYRO0-Z': {
-//         _isCheckedGyroZ = !_isCheckedGyroZ;
-//       }
-//     }
-//
-//     notifyListeners();
-//   }
-// }
-
 class AlgListManager extends ChangeNotifier {
   String chosenAlg = '';
 
@@ -300,10 +212,6 @@ class AlgListManager extends ChangeNotifier {
     notifyListeners();
   }
 }
-
-// final checkBoxProvider = ChangeNotifierProvider((ref) {
-//   return ChartCheckBox();
-// });
 
 final playPauseProvider = ChangeNotifierProvider((ref) {
   return PlayPause();
@@ -344,9 +252,6 @@ class _DataChart extends ConsumerState<DataChart> {
               dataSource: rawDataSource[subType].toList(),
               name: subType,
               enableTooltip: true,
-              // onRendererCreated: (ChartSeriesController controller) {
-              //   _chartSeriesController = controller;
-              // },
               animationDuration: 0,
               xValueMapper: (dynamic rD, _) => rD.timeStep,
               yValueMapper: (dynamic rD, _) => rD.value
