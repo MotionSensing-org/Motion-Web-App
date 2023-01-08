@@ -1,12 +1,15 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'requests.dart';
 import 'dart:convert';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'dart:async';
 import 'dart:collection';
+import 'package:csv/csv.dart';
 
 class RawData {
   int timeStep;
@@ -17,6 +20,27 @@ class RawData {
     timeStep = t;
   }
 }
+
+// if(saveFile) {
+//   var status = await Permission.storage.status;
+//   if (!status.isGranted) {
+//     await Permission.storage.request();
+//   }
+//
+//   if (await Permission.storage.request().isGranted) {
+//     try {
+//       var outputFile = await setOutputFileName('test');
+//
+//       row.add(imu);
+//       row.addAll(rawDataList);
+//       String csv = const ListToCsvConverter().convert([row]);
+//       outputFile.writeAsString(csv);
+//     } catch (e) {
+//       print(e);
+//     }
+//   }
+//
+// }
 
 class RequestHandler extends ChangeNotifier {
   String url;
@@ -30,6 +54,10 @@ class RequestHandler extends ChangeNotifier {
   Ref ref;
   Map checkpointDataBuffer = {};
   Map dataTypes = {};
+  String? filename;
+  File? outputFile;
+  bool createdFile = false;
+  bool saveFile = true;
   final int bufferSize = 500;
 
   RequestHandler(this.url, this.ref) {
@@ -105,6 +133,9 @@ class RequestHandler extends ChangeNotifier {
   }
 
   void updateDataSource(Timer timer) async {
+    List row = [];
+    List headers = [];
+
     if(algorithms.isEmpty) {
       await getAlgList();
       notifyListeners();
@@ -161,21 +192,28 @@ class RequestHandler extends ChangeNotifier {
     var data = await getData(Uri.parse(url + query));
     var decodedData = jsonDecode(data);
     for (var imu in imus) {
-      dataTypes.forEach((key, value) {
+      row.add(imu);
+      headers.add('IMU');
+      dataTypes.forEach((key, value) async {
         for (var type in value) {
+          headers.add(type);
           var strList = decodedData[imu][type]
               .toString()
               .replaceAll(RegExp(r'[\[\],]'), '')
               .split(' ')
               .toList();
+          // print('$type\n$strList');
           var rawDataList = strList
               .map((x) => RawData(strList.indexOf(x), double.parse(x)))
               .toList();
           for (int k = 0; k < rawDataList.length; k++) {
             rawDataList[k].setTimeStep = k;
           }
-
+          // print(strList);
+          // print(type);
           dataBuffer[imu][type].addAll(rawDataList);
+          row.add(strList.last);
+
           while (dataBuffer[imu][type].length > 500) {
             dataBuffer[imu][type].removeFirst();
           }
@@ -190,6 +228,35 @@ class RequestHandler extends ChangeNotifier {
         });
       }
     }
+
+    if(filename != null) { //Should write output to disk
+      if (outputFile == null) { //Output file was not created yet
+        var status = await Permission.storage.status;
+
+        if (!status.isGranted) {
+          await Permission.storage.request();
+        }
+
+        if (await Permission.storage.request().isGranted) {
+          try {
+            outputFile = await File(filename!).create(recursive: true);
+            String csv = const ListToCsvConverter().convert([headers, row]);
+            row.clear();
+            outputFile?.writeAsString('$csv\n');
+          } catch (e) {
+            // print(e);
+          }
+        }
+      } else {
+        String csv = const ListToCsvConverter().convert([row]);
+        outputFile?.writeAsString('$csv\n', mode: FileMode.append);
+      }
+    }
+
+    // else {
+    //   String csv = const ListToCsvConverter().convert([[row]]);
+    //   outputFile?.writeAsString('$csv\n', mode: FileMode.append);
+    // }
 
     notifyListeners();
   }

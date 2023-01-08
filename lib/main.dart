@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iot_project/LandingPage/chart_dash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 
 void main() {
   runApp(ProviderScope(child: MyApp()));
@@ -71,6 +72,38 @@ class _AlgParams extends ConsumerState<AlgParams>{
     for (var imu in imus) {
       imuDashboards[imu] = (context) => ProviderScope(child: ChartDashRoute(imu: imu, properties: widget.properties));
     }
+
+    params.add(
+        Card(
+          color: Colors.white,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+          child: TextButton(
+            child: const Text(
+              'Select output file',
+              style: TextStyle(
+                  color: Colors.grey
+              ),
+            ),
+            onPressed: () async {
+              final DateTime now = DateTime.now();
+              String? outputFile = await FilePicker.platform.saveFile(
+                  dialogTitle: 'Please select an output file:',
+                  fileName: '${now.year}-${now.month}-${now.day}--${now.hour}-${now.minute}-${now.second}',
+                  allowedExtensions: ['csv'],
+                  type: FileType.custom
+              );
+
+              if (outputFile != null) {
+                if(!outputFile.contains('.csv')) {
+                  outputFile += '.csv';
+                }
+              } //User cancelled the file picker
+
+              widget.properties['output_file'] = outputFile;
+            },
+          ),
+        )
+    );
 
     if(currentAlgorithm != '') {
       for(int i = 0; i < curAlgParams.length ;i++){
@@ -300,6 +333,20 @@ class ChartDashRoute extends ConsumerWidget {
             ),
           ),
         ));
+      } else if(key == 'output_file' && value != null) {
+        String nameWithoutPath = value.split('\\').last;
+        algParams.add(Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            'Output file:\n$nameWithoutPath',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                color: Colors.white,
+                // fontSize: 20
+            ),
+          ),
+        ));
+        ref.read(requestAnswerProvider).filename = value;
       } else {
         algParams.add(Padding(
           padding: const EdgeInsets.all(8.0),
