@@ -62,6 +62,7 @@ class AlgParams extends ConsumerStatefulWidget{
 class _AlgParams extends ConsumerState<AlgParams>{
   String? dropdownValue = '';
   Map imuDashboards = {};
+  String outputFileForDisplay = '';
 
   @override
   Widget build(BuildContext context) {
@@ -69,10 +70,20 @@ class _AlgParams extends ConsumerState<AlgParams>{
     String currentAlgorithm = ref.watch(chosenAlgorithmProvider).chosenAlg;
     List<Widget> params = [];
     List imus = ref.watch(requestAnswerProvider).imus;
+
+
     for (var imu in imus) {
       imuDashboards[imu] = (context) => ProviderScope(child: ChartDashRoute(imu: imu, properties: widget.properties));
     }
 
+    params.add(
+        Text(
+          outputFileForDisplay.split('\\').last,
+          style: const TextStyle(
+              color: Colors.white
+          ),
+        )
+    );
     params.add(
         Card(
           color: Colors.white,
@@ -100,6 +111,9 @@ class _AlgParams extends ConsumerState<AlgParams>{
               } //User cancelled the file picker
 
               widget.properties['output_file'] = outputFile;
+              setState(() {
+                outputFileForDisplay = widget.properties['output_file'];
+              });
             },
           ),
         )
