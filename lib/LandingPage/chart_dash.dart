@@ -56,6 +56,7 @@ class RequestHandler extends ChangeNotifier {
   Map dataTypes = {};
   String? filename;
   File? outputFile;
+  bool stop = true;
   bool createdFile = false;
   bool saveFile = true;
   final int bufferSize = 500;
@@ -70,6 +71,10 @@ class RequestHandler extends ChangeNotifier {
 
   void setQuery(String query) {
     this.query = "?request_type=$query";
+  }
+
+  void startStopDataCollection({bool stop=true}) {
+    this.stop = stop;
   }
 
   Future<Map> getDecodedData() async {
@@ -184,6 +189,10 @@ class RequestHandler extends ChangeNotifier {
       var body = json.encode(paramsToSet);
       await setParams(Uri.parse(url+query), body);
       setQuery(curAlg);
+      return;
+    }
+
+    if(stop) {
       return;
     }
 

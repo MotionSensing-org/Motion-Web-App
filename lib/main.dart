@@ -193,6 +193,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
             onPressed: () {
               ref.read(requestAnswerProvider).setQuery('set_params');
               ref.read(requestAnswerProvider).setParamsMap(widget.properties);
+              ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
               Navigator.of(context).pushNamed(imus[0]);
             },
           ),
@@ -402,6 +403,7 @@ class ChartDashRoute extends ConsumerWidget {
               ),
             ),
             onPressed: () {
+              ref.read(requestAnswerProvider).startStopDataCollection(stop: true);
               Navigator.of(context).pushNamed('home');
             },
           ),
