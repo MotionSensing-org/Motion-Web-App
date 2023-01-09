@@ -409,96 +409,98 @@ class _ChartDash extends ConsumerState<ChartDash> {
     mainChart ??= DataChart(imu: widget.imu, dataType: types[0], key: ValueKey(_key), isMainChart: true, mainChartColor: Colors.white,);
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Container(
-          color: Colors.lightBlue,
-          child: Column(
-            // color: Colors.lightBlueAccent,
-              children: [
-                // Text(widget.imu),
-                Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    children: [
-                      Flexible(
-                          flex: 2,
-                          child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 400),
-                              transitionBuilder: (Widget child, Animation<double> animation) {
-                                return ScaleTransition(scale: animation, child: child);
-                              },
-                              child: mainChart
-                          )
-                      ),
-                      Flexible(
-                        flex: 1,
-                        child: Card(
-                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                          elevation: 20,
-                          color: Colors.lightBlueAccent,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: ScrollConfiguration(
-                              behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
-                                //PointerDeviceKind.touch,
-                                PointerDeviceKind.mouse,
-                              },),
-                              child: ListView(
-                                scrollDirection: Axis.horizontal,
-                                children: [
-                                  for(int i = 0; i< types.length; i++) GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _key = (_key == 2 ? 1 : 2);
-                                          mainChart = DataChart(
-                                            imu: widget.imu,
-                                            dataType: types[i],
-                                            key: ValueKey(_key),
-                                            isMainChart: true,
-                                            mainChartColor: Colors.white,);
-                                          for (int j = 0; j < types.length; j++){
-                                            if (j == i){
-                                              _dynamicBorders[j] = highlightedBorder;
-                                            } else {
-                                              _dynamicBorders[j] = Colors.transparent;
-                                            }
+        return Column(
+          // color: Colors.lightBlueAccent,
+            children: [
+              // Text(widget.imu),
+              Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    Flexible(
+                        flex: 2,
+                        child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 400),
+                            transitionBuilder: (Widget child, Animation<double> animation) {
+                              return ScaleTransition(scale: animation, child: child);
+                            },
+                            child: mainChart
+                        )
+                    ),
+                    Flexible(
+                      flex: 1,
+                      child: Card(
+                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                        elevation: 20,
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
+                              //PointerDeviceKind.touch,
+                              PointerDeviceKind.mouse,
+                            },),
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: [
+                                for(int i = 0; i< types.length; i++) GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _key = (_key == 2 ? 1 : 2);
+                                        mainChart = DataChart(
+                                          imu: widget.imu,
+                                          dataType: types[i],
+                                          key: ValueKey(_key),
+                                          isMainChart: true,
+                                          mainChartColor: Colors.white,);
+                                        for (int j = 0; j < types.length; j++){
+                                          if (j == i){
+                                            _dynamicBorders[j] = highlightedBorder;
+                                          } else {
+                                            _dynamicBorders[j] = Colors.transparent;
                                           }
+                                        }
 
-                                        });
-                                      },
-                                      child: Column(
-                                        children: [
-                                          Expanded(
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(16.0),
-                                                child: AnimatedContainer(
-                                                    decoration: BoxDecoration(
-                                                        border: Border.all(
-                                                            width: 6,
-                                                            color: _dynamicBorders[i]
-                                                        ) ,
-                                                        borderRadius: const BorderRadius.all(Radius.circular(20)),
-                                                        color: Colors.white
-                                                    ),
-                                                    duration: const Duration(milliseconds: 800),
-                                                    child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key))
-                                                ),
-                                              )
-                                          ),
-                                        ],
-                                      )
-                                  )
-                                ],
-                              ),
+                                      });
+                                    },
+                                    child: Row(
+                                      children: [
+                                        Column(
+                                          children: [
+                                            Expanded(
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(16.0),
+                                                  child: AnimatedContainer(
+                                                      decoration: BoxDecoration(
+                                                          border: Border.all(
+                                                              width: 6,
+                                                              color: _dynamicBorders[i]
+                                                          ) ,
+                                                          borderRadius: const BorderRadius.all(Radius.circular(20)),
+                                                          color: Colors.white
+                                                      ),
+                                                      duration: const Duration(milliseconds: 800),
+                                                      child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key))
+                                                  ),
+                                                )
+                                            ),
+                                          ],
+                                        ),
+                                        const VerticalDivider()
+                                      ],
+                                    )
+                                )
+                              ],
                             ),
                           ),
                         ),
-                      )
-                    ],
-                  ),
+                      ),
+                    )
+                  ],
                 ),
-              )]
-          )
+              ),
+            )]
         );
       },
     );

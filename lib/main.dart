@@ -42,7 +42,8 @@ class MyApp extends ConsumerWidget {
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
         primarySwatch: Colors.green,
-        fontFamily: "Arial"
+        fontFamily: "Arial",
+        scaffoldBackgroundColor: Colors.lightBlue.shade100
       ),
       home: ProviderScope(child: MyHomePage(properties: properties,)),
       initialRoute: 'home',
@@ -126,26 +127,30 @@ class _AlgParams extends ConsumerState<AlgParams>{
             widget.properties[curAlgParams[i]['param_name']] = curAlgParams[i]['default_value'];
           }
 
-          params.add(Card(
-            color: Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
-            child: TextField(
-              onChanged: (value){
-                widget.properties[curAlgParams[i]['param_name']] = value;
-              },
-              decoration: InputDecoration(
-                labelText: curAlgParams[i]['param_name'],
-                border: const OutlineInputBorder(),
-                hintText: 'Enter a value',
+          params.add(FractionallySizedBox(
+            widthFactor: 0.4,
+            child: Card(
+              color: Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
+              child: TextField(
+                textAlign: TextAlign.center,
+                onChanged: (value){
+                  widget.properties[curAlgParams[i]['param_name']] = value;
+                },
+                decoration: InputDecoration(
+                  labelText: curAlgParams[i]['param_name'],
+                  border: const OutlineInputBorder(),
+                  hintText: 'Enter a value. default: ${curAlgParams[i]['default_value']}',
+                ),
               ),
             ),
           )
           );
         } else {
           if(curAlgParams[i]['type'] == 'CheckList') {
-            List vals = curAlgParams[i]['values'];
+            List values = curAlgParams[i]['values'];
             if(dropdownValue == '') {
-              dropdownValue = vals[curAlgParams[i]['default_value']];
+              dropdownValue = values[curAlgParams[i]['default_value']];
               widget.properties[curAlgParams[i]['param_name']] = dropdownValue;
             }
 
@@ -162,9 +167,9 @@ class _AlgParams extends ConsumerState<AlgParams>{
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: DropdownButton(
-                          items: [for(int k = 0; k < vals.length; k++) DropdownMenuItem<String>(
-                            value: vals[k],
-                            child: Text(vals[k]),
+                          items: [for(int k = 0; k < values.length; k++) DropdownMenuItem<String>(
+                            value: values[k],
+                            child: Text(values[k]),
                           )],
                           icon: const Icon(
                             Icons.arrow_downward,
@@ -294,27 +299,21 @@ class _DashControl extends ConsumerState<DashControl> {
                     ),
                   ),
                 ),
+                AnimatedCrossFade(
+                    crossFadeState: chosenAlgorithm == '' ? CrossFadeState.showFirst
+                        : CrossFadeState.showSecond,
+                    duration: const Duration(milliseconds: 300),
+                    firstChild: const SizedBox.shrink(),
+                    secondChild: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: AlgParams(properties: widget.properties,),
+                    )
+                )
               ],
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: AnimatedCrossFade(
-              crossFadeState: chosenAlgorithm == '' ? CrossFadeState.showFirst
-                  : CrossFadeState.showSecond,
-              duration: const Duration(milliseconds: 300),
-              firstChild: const SizedBox.shrink(),
-              secondChild: Card(
-                  color: Colors.blue,
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: AlgParams(properties: widget.properties,),
-                  )
-              )
-          ),
-        ),
+
       ],
     );
   }
@@ -453,9 +452,8 @@ class ChartDashRoute extends ConsumerWidget {
           )
       );
     }
-    return Container(
-      color: Colors.lightBlue,
-      child: Row(
+    return Scaffold(
+      body: Row(
         children: [
           Expanded(
               flex: 1,
@@ -493,60 +491,36 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        color: Colors.lightBlue,
-        child: Row(
-          children: [
-            Expanded(
-                flex: 1,
-                child:  Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10),
-                  child: Card(
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                    elevation: 20,
-                    color: Colors.white,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(child: DashControl(properties: properties,)),
-                      ],
-                    ),
+      body: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10),
+              child: FractionallySizedBox(
+                widthFactor: 0.5,
+                child: Card(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                  elevation: 20,
+                  color: Colors.white,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Expanded(child: Image(image: AssetImage('assets/images/logo_cropped.png'))),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Expanded(child: DashControl(properties: properties,)),
+                        ],
+                      ),
+                    ],
                   ),
-                )
+                ),
+              ),
             ),
-            Expanded(
-              flex: 4,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10),
-                  child: Card(
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                    elevation: 20,
-                    color: Colors.white,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Text(
-                              'Welcome to the motion sensing web app!',
-                              style: TextStyle(
-                                fontSize: 30,
-                                color: Colors.blue
-                              ),
-                          ),
-                        ),
-                        Padding(padding: EdgeInsets.all(60.0)),
-                        Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Image(image: AssetImage('assets/images/ms-image-one.png')),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-            )
-          ],
-        ),
+          )
+        ],
       ),
     );
   }
