@@ -113,7 +113,9 @@ class _AlgParams extends ConsumerState<AlgParams>{
 
               widget.properties['output_file'] = outputFile;
               setState(() {
-                outputFileForDisplay = widget.properties['output_file'];
+                if(widget.properties['output_file'] != null){
+                  outputFileForDisplay = widget.properties['output_file'];
+                }
               });
             },
           ),
@@ -213,6 +215,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
               ref.read(requestAnswerProvider).setQuery('set_params');
               ref.read(requestAnswerProvider).setParamsMap(widget.properties);
               ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
+              ref.read(requestAnswerProvider).filename = widget.properties['output_file'];
               Navigator.of(context).pushNamed(imus[0]);
             },
           ),
@@ -360,7 +363,7 @@ class ChartDashRoute extends ConsumerWidget {
             ),
           ),
         ));
-        ref.read(requestAnswerProvider).filename = value;
+        // ref.read(requestAnswerProvider).filename = value;
       } else {
         algParams.add(Padding(
           padding: const EdgeInsets.all(8.0),

@@ -75,6 +75,7 @@ class RequestHandler extends ChangeNotifier {
 
   void startStopDataCollection({bool stop=true}) {
     this.stop = stop;
+    outputFile = null;
   }
 
   Future<Map> getDecodedData() async {
