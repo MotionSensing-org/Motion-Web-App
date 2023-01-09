@@ -300,18 +300,18 @@ class _DashControl extends ConsumerState<DashControl> {
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Card(
-              color: Colors.blue,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-              child:  Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: AnimatedCrossFade(
-                    crossFadeState: chosenAlgorithm == '' ? CrossFadeState.showFirst
-                        : CrossFadeState.showSecond,
-                    duration: const Duration(milliseconds: 300),
-                    firstChild: const SizedBox.shrink(),
-                    secondChild: AlgParams(properties: widget.properties,)
-                ),
+          child: AnimatedCrossFade(
+              crossFadeState: chosenAlgorithm == '' ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              duration: const Duration(milliseconds: 300),
+              firstChild: const SizedBox.shrink(),
+              secondChild: Card(
+                  color: Colors.blue,
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: AlgParams(properties: widget.properties,),
+                  )
               )
           ),
         ),
