@@ -380,130 +380,68 @@ class ChartDash extends ConsumerStatefulWidget{
 class _ChartDash extends ConsumerState<ChartDash> {
   DataChart? mainChart;
   int _key = 1;
-  List<Color> _dynamicBorders = [];
   Color highlightedBorder = Colors.lightBlueAccent.shade100;
   late List algorithms;
   String? dropdownValue='';
   Map dataTypes = {};
+  List tapped = [];
+  List types = [];
 
-  Color getColor(Set<MaterialState> states) {
-    const Set<MaterialState> interactiveStates = <MaterialState>{
-      MaterialState.pressed,
-      MaterialState.hovered,
-      MaterialState.focused,
-    };
-    if (states.any(interactiveStates.contains)) {
-      return Colors.blue;
-    }
-    return Colors.green;
+  Stack createStack(BuildContext context, BoxConstraints constraints) {
+    var height = constraints.maxHeight;
+    var width = constraints.maxWidth;
+
+    return Stack(
+      children: List.generate(tapped.length, (i) {
+        return AnimatedPositioned(
+          top: tapped[i] ? 0 : height * 0.65,
+          bottom: tapped[i] ? height * 0.35 : 0,
+          // height: tapped[i] ? 0.75 * height : 0.25 * height,
+          left: tapped[i] ? 0 : (i * width / tapped.length),
+          // right: tapped[i] ? 0 : ((tapped.length - i - 1) * width / tapped.length),
+          width: tapped[i] ? width : width / tapped.length,
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.fastOutSlowIn,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                for(int j = 0; j < tapped.length; j++) {
+                  if(j == i) {
+                    tapped[j] = !tapped[j];
+                  } else {
+                    tapped[j] = false;
+                  }
+                }
+
+                // if(tapped[i]) {
+                //   bringToTheTopOfStack(i);
+                // }
+              });
+            },
+            child: Card(
+              color: Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key)),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     dataTypes = ref.watch(requestAnswerProvider).dataTypes;
-    List types = dataTypes.keys.toList();
-    if(_dynamicBorders.isEmpty) {
-      _dynamicBorders = [for(int i = 0; i < types.length; i++) Colors.transparent];
-      _dynamicBorders[0] = highlightedBorder;
+    if(types.isEmpty && dataTypes.isNotEmpty) {
+      types = dataTypes.keys.toList();
+      tapped = List.generate(types.length, (index) => false);
     }
 
-    mainChart ??= DataChart(imu: widget.imu, dataType: types[0], key: ValueKey(_key), isMainChart: true, mainChartColor: Colors.white,);
     return LayoutBuilder(
-      builder: (context, constraints) {
-        return Column(
-          // color: Colors.lightBlueAccent,
-            children: [
-              // Text(widget.imu),
-              Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    Flexible(
-                        flex: 2,
-                        child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 400),
-                            transitionBuilder: (Widget child, Animation<double> animation) {
-                              return ScaleTransition(scale: animation, child: child);
-                            },
-                            child: mainChart
-                        )
-                    ),
-                    Flexible(
-                      flex: 1,
-                      child: Card(
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                        elevation: 20,
-                        color: Colors.white,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: ScrollConfiguration(
-                            behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
-                              //PointerDeviceKind.touch,
-                              PointerDeviceKind.mouse,
-                            },),
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              children: [
-                                for(int i = 0; i< types.length; i++) GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _key = (_key == 2 ? 1 : 2);
-                                        mainChart = DataChart(
-                                          imu: widget.imu,
-                                          dataType: types[i],
-                                          key: ValueKey(_key),
-                                          isMainChart: true,
-                                          mainChartColor: Colors.white,);
-                                        for (int j = 0; j < types.length; j++){
-                                          if (j == i){
-                                            _dynamicBorders[j] = highlightedBorder;
-                                          } else {
-                                            _dynamicBorders[j] = Colors.transparent;
-                                          }
-                                        }
-
-                                      });
-                                    },
-                                    child: Row(
-                                      children: [
-                                        Column(
-                                          children: [
-                                            Expanded(
-                                                child: Padding(
-                                                  padding: const EdgeInsets.all(16.0),
-                                                  child: AnimatedContainer(
-                                                      decoration: BoxDecoration(
-                                                          border: Border.all(
-                                                              width: 6,
-                                                              color: _dynamicBorders[i]
-                                                          ) ,
-                                                          borderRadius: const BorderRadius.all(Radius.circular(20)),
-                                                          color: Colors.white
-                                                      ),
-                                                      duration: const Duration(milliseconds: 800),
-                                                      child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key))
-                                                  ),
-                                                )
-                                            ),
-                                          ],
-                                        ),
-                                        const VerticalDivider()
-                                      ],
-                                    )
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  ],
-                ),
-              ),
-            )]
-        );
-      },
+      builder: createStack,
     );
   }
 }

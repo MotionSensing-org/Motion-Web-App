@@ -41,9 +41,10 @@ class MyApp extends ConsumerWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.green,
+        // primarySwatch: Colors.green,
         fontFamily: "Arial",
-        scaffoldBackgroundColor: Colors.lightBlue.shade100
+        scaffoldBackgroundColor: Colors.white,
+        cardColor: Colors.lightBlue.shade100
       ),
       home: ProviderScope(child: MyHomePage(properties: properties,)),
       initialRoute: 'home',
@@ -478,7 +479,18 @@ class ChartDashRoute extends ConsumerWidget {
           ),
           Expanded(
               flex: 4,
-              child: ChartDash(imu: imu,)
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10),
+                child: Card(
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                    elevation: 10,
+                    color: Theme.of(context).cardColor,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ChartDash(imu: imu,),
+                    )
+                ),
+              )
           )
         ],
       ),
