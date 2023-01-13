@@ -290,6 +290,33 @@ class AlgListManager extends ChangeNotifier {
   }
 }
 
+class IMUManager extends ChangeNotifier {
+  List<String> imus = [];
+  List<String> feedbacks = [];
+
+  void addIMU(String imu, {bool isFeedback = false}) {
+    if(isFeedback) {
+      feedbacks.add(imu);
+    } else {
+      imus.add(imu);
+    }
+    print(imus);
+    print(feedbacks);
+  }
+
+  List<String> getIMUs({bool isFeedback=false}) {
+    if(isFeedback) {
+      return List.from(feedbacks);
+    }
+
+    return List.from(imus);
+  }
+}
+
+final imusProvider = ChangeNotifierProvider((ref) {
+  return IMUManager();
+});
+
 final playPauseProvider = ChangeNotifierProvider((ref) {
   return PlayPause();
 });

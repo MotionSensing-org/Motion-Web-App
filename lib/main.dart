@@ -44,7 +44,10 @@ class MyApp extends ConsumerWidget {
         // primarySwatch: Colors.green,
         fontFamily: "Arial",
         scaffoldBackgroundColor: Colors.white,
-        cardColor: Colors.lightBlue.shade100
+        cardColor: Colors.lightBlue.shade50,
+        cardTheme: const CardTheme(
+          elevation: 0
+        )
       ),
       home: ProviderScope(child: MyHomePage(properties: properties,)),
       initialRoute: 'home',
@@ -90,6 +93,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
         Card(
           color: Colors.white,
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+          elevation: Theme.of(context).cardTheme.elevation,
           child: TextButton(
             child: const Text(
               'Select output file',
@@ -135,6 +139,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
             child: Card(
               color: Colors.white,
               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
+              elevation: Theme.of(context).cardTheme.elevation,
               child: TextField(
                 textAlign: TextAlign.center,
                 onChanged: (value){
@@ -167,6 +172,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
                   Card(
                     color: Colors.white,
                     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                    elevation: Theme.of(context).cardTheme.elevation,
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: DropdownButton(
@@ -205,6 +211,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
         Card(
           color: Colors.green,
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+          elevation: Theme.of(context).cardTheme.elevation,
           child: TextButton(
             child: const Text(
               'Start',
@@ -261,6 +268,7 @@ class _DashControl extends ConsumerState<DashControl> {
           padding: const EdgeInsets.all(8.0),
           child: Card(
             shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+            elevation: Theme.of(context).cardTheme.elevation,
             color: Colors.blue,
             child: Column(
               children: [
@@ -277,6 +285,7 @@ class _DashControl extends ConsumerState<DashControl> {
                   padding: const EdgeInsets.all(8.0),
                   child: Card(
                     color: Colors.white,
+                    elevation: Theme.of(context).cardTheme.elevation,
                     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
@@ -324,22 +333,93 @@ class _DashControl extends ConsumerState<DashControl> {
 }
 
 
-class ChartDashRoute extends ConsumerWidget {
-  Map properties;
-  Color selectedImuColor = Colors.green;
-  Color notSelectedImuColor = Colors.grey;
-  ChartDashRoute({Key? key, required this.imu, required this.properties}) : super(key: key);
-  Map chartDashboards = {};
-  final String imu;
+class FadeIndexedStack extends StatefulWidget {
+  final int index;
+  final List<Widget> children;
+  final Duration duration;
 
+  const FadeIndexedStack({
+    Key? key,
+    required this.index,
+    required this.children,
+    this.duration = const Duration(
+      milliseconds: 800,
+    ),
+  }) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  _FadeIndexedStackState createState() => _FadeIndexedStackState();
+}
+
+class _FadeIndexedStackState extends State<FadeIndexedStack>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void didUpdateWidget(FadeIndexedStack oldWidget) {
+    if (widget.index != oldWidget.index) {
+      _controller.forward(from: 0.0);
+    }
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  void initState() {
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _controller.forward();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _controller,
+      child: IndexedStack(
+        index: widget.index,
+        children: widget.children,
+      ),
+    );
+  }
+}
+
+
+class ChartDashRoute extends ConsumerStatefulWidget{
+  Map properties;
+  final String imu;
+  ChartDashRoute({Key? key, required this.imu, required this.properties}) : super(key: key);
+
+  @override
+  ConsumerState<ChartDashRoute> createState() => _ChartDashRoute();
+}
+
+class _ChartDashRoute extends ConsumerState<ChartDashRoute>
+    with SingleTickerProviderStateMixin {
+  Color selectedImuColor = Colors.green;
+  Color notSelectedImuColor = Colors.grey;
+  Map chartDashboards = {};
+  int chosenIMUIndex = 0;
+  static const Color _connectedIMUColor = Colors.green;
+  late final AnimationController _playPauseAnimationController;
+
+  @override
+  void initState() {
+    _playPauseAnimationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     List<Widget> displayItems = [];
     List<Widget> algParams = [];
     List imus = ref.watch(requestAnswerProvider).imus;
 
-    properties.forEach((key, value) {
+    widget.properties.forEach((key, value) {
       if(key == 'alg_name') {
         algParams.add(Padding(
           padding: const EdgeInsets.all(8.0),
@@ -382,6 +462,7 @@ class ChartDashRoute extends ConsumerWidget {
     displayItems.addAll([
       Card(
         color: Colors.blue,
+        elevation: Theme.of(context).cardTheme.elevation,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
         child: Column(
           children: algParams,
@@ -392,6 +473,11 @@ class ChartDashRoute extends ConsumerWidget {
         child: ElevatedButton(
           onPressed: () {
             ref.read(playPauseProvider).playPause();
+            if(ref.read(playPauseProvider).pause) {
+              _playPauseAnimationController.forward();
+            } else {
+              _playPauseAnimationController.reverse();
+            }
           },
           style: ButtonStyle(
             shape: MaterialStateProperty.all(const CircleBorder()),
@@ -402,15 +488,14 @@ class ChartDashRoute extends ConsumerWidget {
               return Colors.blue;
             }),
           ),
-          child: ref.watch(playPauseProvider).pause
-              ? const Icon(Icons.pause_outlined)
-              : const Icon(Icons.play_arrow),
+          child: AnimatedIcon(icon: AnimatedIcons.play_pause, progress: _playPauseAnimationController),
         ),
       ),
       Padding(
         padding: const EdgeInsets.all(8.0),
         child: Card(
           color: Colors.red,
+          elevation: Theme.of(context).cardTheme.elevation,
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
           child: TextButton(
             child: const Text(
@@ -428,67 +513,138 @@ class ChartDashRoute extends ConsumerWidget {
       )
     ]);
 
-    for(var imuName in imus) {
-      displayItems.add(
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
-              decoration: BoxDecoration(
-                  border: Border.all(
-                      width: 2,
-                      color: Colors.grey
-                  ) ,
-                  borderRadius: const BorderRadius.all(Radius.circular(10)),
-                  color: Colors.white
-              ),
-              child: TextButton(
-                child: Text(
-                  imuName,
-                  style: TextStyle(
-                      color: (imuName == imu) ? selectedImuColor : notSelectedImuColor
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pushNamed(imuName);
-                },
-              ),
-            ),
-          )
-      );
-    }
     return Scaffold(
+      appBar: AppBar(
+        title: Text('${widget.properties['alg_name']}'),
+      ),
+      drawer: Drawer(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: displayItems,
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+
+        },
+        tooltip: 'Imu status',
+        child: const Icon(Icons.notifications),
+      ), // Th,
       body: Row(
         children: [
-          Expanded(
-              flex: 1,
-              child:  Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10),
-                child: Card(
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                  elevation: 10,
-                  color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: displayItems,
-                    ),
-                  ),
-                ),
-              )
-          ),
           Expanded(
               flex: 4,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10),
-                child: Card(
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                    elevation: 10,
-                    color: Theme.of(context).cardColor,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ChartDash(imu: imu,),
-                    )
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      flex: 7,
+                      child: Card(
+                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                          elevation: Theme.of(context).cardTheme.elevation,
+                          color: Theme.of(context).cardColor,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: FadeIndexedStack(
+                                duration: const Duration(milliseconds: 500),
+                                index: chosenIMUIndex,
+                                children: List.generate(imus.length, (index) {
+                                  return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
+                                    return Stack(
+                                        children: [
+                                          Positioned(
+                                            top: 0,
+                                            left: 3 * constraints.maxWidth / 8,
+                                            child: Icon(
+                                              Icons.show_chart,
+                                              color: Colors.white,
+                                              size: constraints.maxWidth / 4,
+                                            ),
+                                          ),
+                                          ChartDash(imu: imus[index],)
+                                        ]
+                                    );
+                                  });
+                                })
+                            ),
+                          )
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Card(
+                                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                                elevation: Theme.of(context).cardTheme.elevation,
+                                color: Theme.of(context).cardColor,
+                                child: Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      shrinkWrap: true,
+                                      itemCount: imus.length,
+                                      itemBuilder: (context, index) {
+                                      return Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: GestureDetector(
+                                          child: AnimatedContainer(
+                                            duration:  const Duration(milliseconds: 500),
+                                            decoration: BoxDecoration(
+                                                color: (chosenIMUIndex == index) ? Colors.lightBlue.shade200 : Colors.white,
+                                                borderRadius: const BorderRadius.all(Radius.circular(20))
+                                            ),
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Flexible(
+                                                  child: Padding(
+                                                    padding: EdgeInsets.all(8.0),
+                                                    child: Icon(
+                                                      Icons.sensors,
+                                                      color: _connectedIMUColor,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Flexible(
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.all(8.0),
+                                                    child: Text(
+                                                      imus[index].toString().substring(12),
+                                                      style: const TextStyle(
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                )
+                                              ],
+                                            ),
+                                          ),
+                                          onTap: () {
+                                            setState(() {
+                                              chosenIMUIndex = index;
+                                            });
+                                          }
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                )
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               )
           )
@@ -498,14 +654,103 @@ class ChartDashRoute extends ConsumerWidget {
   }
 }
 
+class TextFieldClass{
+  TextEditingController controller = TextEditingController();
+  String imuMac;
 
-class MyHomePage extends StatelessWidget {
+  TextFieldClass({required this.controller, this.imuMac='88:6B:0F:E1:D8:68'});
+}
+
+class IMUList extends ConsumerStatefulWidget {
+  IMUList({Key? key, this.isFeedbackList=false}) : super(key: key);
+  List<TextFieldClass> addedIMUs = [];
+  bool isFeedbackList;
+
+  List<String> getList() => addedIMUs.map((e) => e.imuMac).toList();
+
+  @override
+  ConsumerState<IMUList> createState() => _IMUListState();
+}
+
+class _IMUListState extends ConsumerState<IMUList> {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: FloatingActionButton(
+            onPressed: () {
+              setState(() {
+                widget.addedIMUs.add(TextFieldClass(
+                    controller: TextEditingController(),
+                ));
+                print(widget.addedIMUs.length);
+              });
+            },
+            tooltip: 'Add ${widget.isFeedbackList ? 'feedback' : 'IMU'}',
+            child: const Icon(Icons.plus_one),
+          ),
+        ),
+        Flexible(
+          child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: widget.addedIMUs.length,
+              itemBuilder: (context, index) {
+                return TextFormField(
+                  textAlign: TextAlign.center,
+                  controller: widget.addedIMUs[index].controller..text = widget.addedIMUs[index].imuMac,
+                  // initialValue: '88:6B:0F:E1:D8:68',
+                  onFieldSubmitted: (value) {
+                    widget.addedIMUs[index].imuMac = value;
+                    ref.read(imusProvider).addIMU(value, isFeedback: widget.isFeedbackList);
+                  },
+                );
+              }
+          ),
+        )
+      ],
+    );
+  }
+}
+
+class MyHomePage extends ConsumerWidget {
   MyHomePage({super.key, required this.properties});
   Map properties;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Motion Sensing'),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          children: [
+            ExpansionTile(
+              title: const Text('Add IMUs'),
+              children: [
+                IMUList(),
+              ],
+            ),
+            ExpansionTile(
+              title: const Text('Add Feedback sensors'),
+              children: [
+                IMUList(isFeedbackList: true,),
+              ],
+            ),
+            ExpansionTile(
+              title: const Text('Add IMUs'),
+              children: ref.watch(imusProvider).imus.map((e) => Text(e)).toList(),
+            ),
+            ExpansionTile(
+              title: const Text('Add Feedback sensors'),
+              children: ref.watch(imusProvider).feedbacks.map((e) => Text(e)).toList(),
+            )
+          ],
+        ),
+      ),
       body: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -517,7 +762,7 @@ class MyHomePage extends StatelessWidget {
                 widthFactor: 0.5,
                 child: Card(
                   shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                  elevation: 20,
+                  elevation: Theme.of(context).cardTheme.elevation,
                   color: Colors.white,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
