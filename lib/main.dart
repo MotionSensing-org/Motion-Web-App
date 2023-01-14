@@ -741,6 +741,11 @@ class _IMUListState extends ConsumerState<IMUList> {
   ListView listus = ListView();
   @override
   Widget build(BuildContext context) {
+    print('\n\n');
+    for (var element in widget.addedIMUs) {
+      print(element.imuMac);
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -768,13 +773,17 @@ class _IMUListState extends ConsumerState<IMUList> {
                   key: UniqueKey(),
                   startActionPane: ActionPane(
                       dismissible: DismissiblePane(onDismissed: () {
-                        widget.addedIMUs.removeAt(index);
+                        setState(() {
+                          widget.addedIMUs.removeAt(index);
+                        });
                       }),
                       motion: const ScrollMotion(),
                       children: [
                         SlidableAction(
                             onPressed: (BuildContext context) {
-                              widget.addedIMUs.removeAt(index);
+                              setState(() {
+                                widget.addedIMUs.removeAt(index);
+                              });
                             },
                             backgroundColor: Colors.red,
                             foregroundColor: Colors.white,
@@ -790,7 +799,7 @@ class _IMUListState extends ConsumerState<IMUList> {
                         textAlign: TextAlign.center,
                         controller: widget.addedIMUs[index].controller..text = widget.addedIMUs[index].imuMac,
                         // initialValue: '88:6B:0F:E1:D8:68',
-                        onFieldSubmitted: (value) {
+                        onChanged: (value) {
                           widget.addedIMUs[index].imuMac = value;
                           // ref.read(imusProvider).addIMU(value, isFeedback: widget.isFeedbackList);
                         },
