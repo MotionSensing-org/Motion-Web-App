@@ -850,13 +850,13 @@ class MyHomePage extends ConsumerStatefulWidget{
 }
 
 class _MyHomePage extends ConsumerState<MyHomePage>{
-  int fadeStackIndex = 0;
-  List<Widget> fadeStackChildren = [];
+  int animatedStackIndex = 0;
+  List<Widget> animatedStackChildren = [];
 
   @override
   Widget build(BuildContext context) {
-    if(fadeStackChildren.isEmpty) {
-      fadeStackChildren = [
+    if(animatedStackChildren.isEmpty) {
+      animatedStackChildren = [
         const Image(image: AssetImage('assets/images/logo_cropped.png')),
         ClipRRect(
           borderRadius: const BorderRadius.all(Radius.circular(10)),
@@ -917,8 +917,8 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                 Flexible(
                   fit: FlexFit.loose,
                   child: AnimatedIndexedStack(
-                      index: fadeStackIndex,
-                      children: fadeStackChildren
+                      index: animatedStackIndex,
+                      children: animatedStackChildren
                   ),
                 ),
                 Flexible(
@@ -933,14 +933,14 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                           duration: const Duration(milliseconds: 500),
                           decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: fadeStackIndex == 0
+                              color: animatedStackIndex == 0
                                   ? Colors.grey.shade100.withOpacity(0.1)
                                   : Theme.of(context).cardColor
                           ),
                           child: IconButton(
                               onPressed: () => setState(() {
-                                if(fadeStackIndex > 0) {
-                                  fadeStackIndex -= 1;
+                                if(animatedStackIndex > 0) {
+                                  animatedStackIndex -= 1;
                                   return;
                                 }
                               }),
@@ -964,20 +964,20 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: ref.watch(chosenAlgorithmProvider).chosenAlg == ''
-                                && fadeStackIndex == 1
+                                && animatedStackIndex == 1
                                 ? Colors.grey.shade100.withOpacity(0.1)
                                 : Theme.of(context).cardColor
                           ),
                           child: IconButton(
                               onPressed: () => setState(() {
-                                if(widget.properties['alg_name'] == null && fadeStackIndex == 1) {
+                                if(widget.properties['alg_name'] == null && animatedStackIndex == 1) {
                                   showDialog(
                                       context: context,
                                       builder: (context) => const AlertDialog(content: Text('Please select an algorithm to continue'),)
                                   );
                                   return;
-                                } else if(fadeStackIndex < fadeStackChildren.length - 1) {
-                                  fadeStackIndex += 1;
+                                } else if(animatedStackIndex < animatedStackChildren.length - 1) {
+                                  animatedStackIndex += 1;
                                   return;
                                 }
 
