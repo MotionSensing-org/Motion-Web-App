@@ -857,7 +857,7 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
   Widget build(BuildContext context) {
     if(animatedStackChildren.isEmpty) {
       animatedStackChildren = [
-        const Image(image: AssetImage('assets/images/logo_cropped.png')),
+        const Image(image: AssetImage('assets/images/logo_round.png')),
         ClipRRect(
           borderRadius: const BorderRadius.all(Radius.circular(10)),
           child: BackdropFilter(

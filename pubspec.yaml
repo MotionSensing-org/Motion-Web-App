@@ -73,7 +73,7 @@ flutter:
     - assets/images/bg.png
     - assets/images/iot-banner.jpg
     - assets/images/ms-image-one.png
-    - assets/images/logo_cropped.png
+    - assets/images/logo_round.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
