@@ -1,7 +1,11 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:iot_project/LandingPage/chart_dash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+
 
 void main() {
   runApp(ProviderScope(child: MyApp()));
@@ -21,7 +25,7 @@ class MyApp extends ConsumerWidget {
     }
     return MaterialPageRoute(
         settings: RouteSettings(name: settings.name),
-        builder: (context) => ProviderScope(child: ChartDashRoute(properties: properties, imu: settings.name!,))
+        builder: (context) => ProviderScope(child: ChartDashRoute(properties: properties))
     );
   }
   // This widget is the root of your application.
@@ -42,9 +46,16 @@ class MyApp extends ConsumerWidget {
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
         // primarySwatch: Colors.green,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.blue
+        ),
+        drawerTheme: DrawerThemeData(
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+          backgroundColor: Colors.grey.shade100.withOpacity(0.4)
+        ),
         fontFamily: "Arial",
         scaffoldBackgroundColor: Colors.white,
-        cardColor: Colors.lightBlue.shade50,
+        cardColor: Colors.grey.shade100.withOpacity(0.4),
         cardTheme: const CardTheme(
           elevation: 0
         )
@@ -74,18 +85,18 @@ class _AlgParams extends ConsumerState<AlgParams>{
     List curAlgParams = ref.watch(requestAnswerProvider).curAlgParams;
     String currentAlgorithm = ref.watch(chosenAlgorithmProvider).chosenAlg;
     List<Widget> params = [];
-    List imus = ref.watch(requestAnswerProvider).imus;
-
-
-    for (var imu in imus) {
-      imuDashboards[imu] = (context) => ProviderScope(child: ChartDashRoute(imu: imu, properties: widget.properties));
-    }
 
     params.add(
         Text(
           outputFileForDisplay.split('\\').last,
           style: const TextStyle(
-              color: Colors.white
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                    blurRadius: 5,
+                    color: Colors.grey
+                )
+              ]
           ),
         )
     );
@@ -167,36 +178,50 @@ class _AlgParams extends ConsumerState<AlgParams>{
                 children: [
                   Text(
                     curAlgParams[i]['param_name'],
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                              blurRadius: 5,
+                              color: Colors.grey
+                          )
+                        ]
+                    ),
                   ),
-                  Card(
-                    color: Colors.white,
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                    elevation: Theme.of(context).cardTheme.elevation,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: DropdownButton(
-                          items: [for(int k = 0; k < values.length; k++) DropdownMenuItem<String>(
-                            value: values[k],
-                            child: Text(values[k]),
-                          )],
-                          icon: const Icon(
-                            Icons.arrow_downward,
-                            color: Colors.blue,
-                          ),
-                          value: dropdownValue,
-                          underline: Container(
-                            color: Colors.blue,
-                            height: 3,
-                          ),
-                          style: const TextStyle(color: Colors.blue),
-                          onChanged: (String? value) {
-                            setState(() {
-                              dropdownValue = value;
-                              widget.properties[curAlgParams[i]['param_name']] = dropdownValue;
-                            });
-                          }
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: DropdownButton(
+                        items: [for(int k = 0; k < values.length; k++) DropdownMenuItem<String>(
+                          value: values[k],
+                          child: Text(values[k]),
+                        )],
+                        dropdownColor: Colors.grey.shade100.withOpacity(0.6),
+                        icon: const Icon(
+                          Icons.arrow_downward,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                                blurRadius: 5,
+                                color: Colors.grey
+                            )
+                          ]
+                        ),
+                        value: dropdownValue,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                  blurRadius: 5,
+                                  color: Colors.grey
+                              )
+                            ]
+                        ),
+                        onChanged: (String? value) {
+                          setState(() {
+                            dropdownValue = value;
+                            widget.properties[curAlgParams[i]['param_name']] = dropdownValue;
+                          });
+                        }
                     ),
                   ),
                 ],
@@ -207,29 +232,8 @@ class _AlgParams extends ConsumerState<AlgParams>{
       }
     }
 
-    params.add(
-        Card(
-          color: Colors.green,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-          elevation: Theme.of(context).cardTheme.elevation,
-          child: TextButton(
-            child: const Text(
-              'Start',
-              style: TextStyle(
-                color: Colors.white
-              ),
-            ),
-            onPressed: () {
-              ref.read(requestAnswerProvider).setQuery('set_params');
-              ref.read(requestAnswerProvider).setParamsMap(widget.properties);
-              ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
-              ref.read(requestAnswerProvider).filename = widget.properties['output_file'];
-              Navigator.of(context).pushNamed(imus[0]);
-            },
-          ),
-        )
-    );
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: params,
     );
   }
@@ -254,91 +258,98 @@ class _DashControl extends ConsumerState<DashControl> {
     algorithms = ref.watch(requestAnswerProvider).algorithms;
     List<DropdownMenuItem<String>> algorithmsList = [for(int i = 0; i < algorithms.length; i++) DropdownMenuItem<String>(
       value: algorithms[i],
-      child: Text(algorithms[i]),
+      child: Text(
+          algorithms[i],
+          style: const TextStyle(
+              shadows: [
+                Shadow(
+                    blurRadius: 5,
+                    color: Colors.grey
+                )
+              ]
+          ),
+      ),
     )];
 
     if(dropdownValue == '' && algorithms.isNotEmpty) {
       dropdownValue = algorithms[0];
     } 
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Card(
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-            elevation: Theme.of(context).cardTheme.elevation,
-            color: Colors.blue,
-            child: Column(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Text(
-                      'Please choose an algorithm:',
-                    style: TextStyle(
-                        color: Colors.white
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Card(
-                    color: Colors.white,
-                    elevation: Theme.of(context).cardTheme.elevation,
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: DropdownButton(
-                          items: algorithmsList,
-                          icon: const Icon(
-                            Icons.arrow_downward,
-                            color: Colors.blue,
-                          ),
-                          value: dropdownValue,
-                          underline: Container(
-                            color: Colors.blue,
-                            height: 3,
-                          ),
-                          style: const TextStyle(color: Colors.blue),
-                          onChanged: (String? value) {
-                            setState(() {
-                              dropdownValue = value;
-                              widget.properties['alg_name'] = value;
-                              ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
-                            });
-                          }
-                      ),
-                    ),
-                  ),
-                ),
-                AnimatedCrossFade(
-                    crossFadeState: chosenAlgorithm == '' ? CrossFadeState.showFirst
-                        : CrossFadeState.showSecond,
-                    duration: const Duration(milliseconds: 300),
-                    firstChild: const SizedBox.shrink(),
-                    secondChild: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: AlgParams(properties: widget.properties,),
-                    )
-                )
-              ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.all(Radius.circular(10))
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text(
+                'Please choose an algorithm:',
+              style: TextStyle(
+                  color: Colors.white,
+                shadows: [
+                  Shadow(
+                      blurRadius: 5,
+                      color: Colors.grey
+                  )
+                ]
+              ),
             ),
           ),
-        ),
-
-      ],
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: DropdownButton(
+                  items: algorithmsList,
+                  dropdownColor: Colors.grey.shade100.withOpacity(0.6),
+                  icon: const Icon(
+                    Icons.arrow_downward,
+                    color: Colors.white,
+                      shadows: [
+                      Shadow(
+                          blurRadius: 5,
+                          color: Colors.grey
+                      )
+                    ]
+                  ),
+                  value: dropdownValue,
+                  style: const TextStyle(color: Colors.white),
+                  onChanged: (String? value) {
+                    setState(() {
+                      dropdownValue = value;
+                      widget.properties['alg_name'] = value;
+                      ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
+                    });
+                  }
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+              crossFadeState: chosenAlgorithm == '' ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              duration: const Duration(milliseconds: 300),
+              firstChild: const SizedBox.shrink(),
+              secondChild: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: AlgParams(properties: widget.properties,),
+              )
+          )
+        ],
+      ),
     );
   }
 }
 
 
-class FadeIndexedStack extends StatefulWidget {
+class AnimatedIndexedStack extends StatefulWidget {
   final int index;
   final List<Widget> children;
   final Duration duration;
 
-  const FadeIndexedStack({
+  const AnimatedIndexedStack({
     Key? key,
     required this.index,
     required this.children,
@@ -348,15 +359,15 @@ class FadeIndexedStack extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _FadeIndexedStackState createState() => _FadeIndexedStackState();
+  _AnimatedIndexedStackState createState() => _AnimatedIndexedStackState();
 }
 
-class _FadeIndexedStackState extends State<FadeIndexedStack>
+class _AnimatedIndexedStackState extends State<AnimatedIndexedStack>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
-  void didUpdateWidget(FadeIndexedStack oldWidget) {
+  void didUpdateWidget(AnimatedIndexedStack oldWidget) {
     if (widget.index != oldWidget.index) {
       _controller.forward(from: 0.0);
     }
@@ -381,6 +392,7 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
     return ScaleTransition(
       scale: _controller,
       child: IndexedStack(
+        alignment: Alignment.center,
         index: widget.index,
         children: widget.children,
       ),
@@ -391,8 +403,7 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
 
 class ChartDashRoute extends ConsumerStatefulWidget{
   Map properties;
-  final String imu;
-  ChartDashRoute({Key? key, required this.imu, required this.properties}) : super(key: key);
+  ChartDashRoute({Key? key, required this.properties}) : super(key: key);
 
   @override
   ConsumerState<ChartDashRoute> createState() => _ChartDashRoute();
@@ -461,34 +472,11 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
 
     displayItems.addAll([
       Card(
-        color: Colors.blue,
+        color: Colors.black.withOpacity(0.3),
         elevation: Theme.of(context).cardTheme.elevation,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
         child: Column(
           children: algParams,
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: ElevatedButton(
-          onPressed: () {
-            ref.read(playPauseProvider).playPause();
-            if(ref.read(playPauseProvider).pause) {
-              _playPauseAnimationController.forward();
-            } else {
-              _playPauseAnimationController.reverse();
-            }
-          },
-          style: ButtonStyle(
-            shape: MaterialStateProperty.all(const CircleBorder()),
-            padding: MaterialStateProperty.all(const EdgeInsets.all(20)),
-            backgroundColor: MaterialStateProperty.all(Colors.blue), // <-- Button color
-            overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
-              if (states.contains(MaterialState.pressed)) return Colors.lightBlueAccent; // <-- Splash color
-              return Colors.blue;
-            }),
-          ),
-          child: AnimatedIcon(icon: AnimatedIcons.play_pause, progress: _playPauseAnimationController),
         ),
       ),
       Padding(
@@ -514,43 +502,47 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
     ]);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.properties['alg_name']}'),
-      ),
-      drawer: Drawer(
+      drawer: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: displayItems,
+          child: Drawer(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: displayItems,
+              ),
+            ),
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-
-        },
-        tooltip: 'Imu status',
-        child: const Icon(Icons.notifications),
-      ), // Th,
-      body: Row(
+      body: Stack(
         children: [
-          Expanded(
-              flex: 4,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Expanded(
-                      flex: 7,
-                      child: Card(
-                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                          elevation: Theme.of(context).cardTheme.elevation,
-                          color: Theme.of(context).cardColor,
+          const Image(
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              image: AssetImage('assets/images/bg.png')
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Expanded(
+                  flex: 7,
+                  child: ClipRRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                          decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: const BorderRadius.all(Radius.circular(10))
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: FadeIndexedStack(
+                            child: AnimatedIndexedStack(
                                 duration: const Duration(milliseconds: 500),
                                 index: chosenIMUIndex,
                                 children: List.generate(imus.length, (index) {
@@ -575,78 +567,150 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                           )
                       ),
                     ),
-                    Expanded(
-                      flex: 1,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Card(
-                                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                                elevation: Theme.of(context).cardTheme.elevation,
-                                color: Theme.of(context).cardColor,
+                  ),
+                ),
+                Flexible(
+                  flex: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.all(Radius.circular(20)),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                            child: Container(
+                                decoration: BoxDecoration(
+                                    color: Theme.of(context).cardColor,
+                                    borderRadius: const BorderRadius.all(Radius.circular(10))
+                                ),
                                 child: Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: ListView.builder(
-                                      scrollDirection: Axis.horizontal,
-                                      shrinkWrap: true,
-                                      itemCount: imus.length,
-                                      itemBuilder: (context, index) {
-                                      return Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: GestureDetector(
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    shrinkWrap: true,
+                                    itemCount: imus.length,
+                                    itemBuilder: (context, index) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: GestureDetector(
+                                        child: Tooltip(
+                                          message: imus[index],
                                           child: AnimatedContainer(
                                             duration:  const Duration(milliseconds: 500),
                                             decoration: BoxDecoration(
-                                                color: (chosenIMUIndex == index) ? Colors.lightBlue.shade200 : Colors.white,
+                                                color: (chosenIMUIndex == index) ? Colors.white : Colors.white.withOpacity(0.5),
                                                 borderRadius: const BorderRadius.all(Radius.circular(20))
                                             ),
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Flexible(
-                                                  child: Padding(
-                                                    padding: EdgeInsets.all(8.0),
+                                            child: Center(
+                                              child: Column(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Flexible(
+                                                    fit: FlexFit.loose,
                                                     child: Icon(
                                                       Icons.sensors,
                                                       color: _connectedIMUColor,
                                                     ),
                                                   ),
-                                                ),
-                                                Flexible(
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.all(8.0),
-                                                    child: Text(
-                                                      imus[index].toString().substring(12),
-                                                      style: const TextStyle(
-                                                        color: Colors.grey,
+                                                  Flexible(
+                                                    fit: FlexFit.loose,
+                                                    child: Visibility(
+                                                      visible: MediaQuery.of(context).size.width > narrowWidth ? true : false,
+                                                      child: Padding(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                        child: Text(
+                                                          imus[index].toString().substring(12),
+                                                          style: const TextStyle(
+                                                            color: Colors.grey,
+                                                          ),
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                )
-                                              ],
+                                                  )
+                                                ],
+                                              ),
                                             ),
                                           ),
-                                          onTap: () {
-                                            setState(() {
-                                              chosenIMUIndex = index;
-                                            });
-                                          }
                                         ),
-                                      );
-                                    }),
-                                  ),
+                                        onTap: () {
+                                          setState(() {
+                                            chosenIMUIndex = index;
+                                          });
+                                        }
+                                      ),
+                                    );
+                                  }),
                                 )
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              )
+                const Flexible(
+                  fit: FlexFit.loose,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 5.0),)
+                )
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Builder(
+                      builder: (context) {
+                        return FloatingActionButton(
+                          heroTag: 'Options',
+                          onPressed: () {
+                            Scaffold.of(context).openDrawer();
+                          },
+                          tooltip: 'Options',
+                          child: const Icon(Icons.settings),
+                        );
+                      }
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                      heroTag: 'Imu status',
+                      onPressed: () {
+
+                      },
+                      tooltip: 'Imu status',
+                      child: const Icon(Icons.notifications),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                      heroTag: 'Play/Pause',
+                      onPressed: () {
+                        ref.read(playPauseProvider).playPause();
+                        if(ref.read(playPauseProvider).pause) {
+                          _playPauseAnimationController.forward();
+                        } else {
+                          _playPauseAnimationController.reverse();
+                        }
+                      },
+                      tooltip: 'Play/Pause',
+                      child: AnimatedIcon(icon: AnimatedIcons.pause_play, progress: _playPauseAnimationController),
+                    ),
+                  )
+                ],
+              ),
+            ),
           )
         ],
       ),
@@ -673,6 +737,8 @@ class IMUList extends ConsumerStatefulWidget {
 }
 
 class _IMUListState extends ConsumerState<IMUList> {
+  List imus = [];
+  ListView listus = ListView();
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -681,12 +747,12 @@ class _IMUListState extends ConsumerState<IMUList> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: FloatingActionButton(
+            heroTag: 'Add ${widget.isFeedbackList ? 'feedback' : 'IMU'}',
             onPressed: () {
               setState(() {
                 widget.addedIMUs.add(TextFieldClass(
                     controller: TextEditingController(),
                 ));
-                print(widget.addedIMUs.length);
               });
             },
             tooltip: 'Add ${widget.isFeedbackList ? 'feedback' : 'IMU'}',
@@ -698,14 +764,39 @@ class _IMUListState extends ConsumerState<IMUList> {
               shrinkWrap: true,
               itemCount: widget.addedIMUs.length,
               itemBuilder: (context, index) {
-                return TextFormField(
-                  textAlign: TextAlign.center,
-                  controller: widget.addedIMUs[index].controller..text = widget.addedIMUs[index].imuMac,
-                  // initialValue: '88:6B:0F:E1:D8:68',
-                  onFieldSubmitted: (value) {
-                    widget.addedIMUs[index].imuMac = value;
-                    ref.read(imusProvider).addIMU(value, isFeedback: widget.isFeedbackList);
-                  },
+                return Slidable(
+                  key: UniqueKey(),
+                  startActionPane: ActionPane(
+                      dismissible: DismissiblePane(onDismissed: () {
+                        widget.addedIMUs.removeAt(index);
+                      }),
+                      motion: const ScrollMotion(),
+                      children: [
+                        SlidableAction(
+                            onPressed: (BuildContext context) {
+                              widget.addedIMUs.removeAt(index);
+                            },
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            icon: Icons.delete,
+                            label: 'Delete',
+                        )
+                      ]
+                  ),
+                  child: Center(
+                    child: FractionallySizedBox(
+                      widthFactor: 0.7,
+                      child: TextFormField(
+                        textAlign: TextAlign.center,
+                        controller: widget.addedIMUs[index].controller..text = widget.addedIMUs[index].imuMac,
+                        // initialValue: '88:6B:0F:E1:D8:68',
+                        onFieldSubmitted: (value) {
+                          widget.addedIMUs[index].imuMac = value;
+                          // ref.read(imusProvider).addIMU(value, isFeedback: widget.isFeedbackList);
+                        },
+                      ),
+                    ),
+                  ),
                 );
               }
           ),
@@ -715,69 +806,133 @@ class _IMUListState extends ConsumerState<IMUList> {
   }
 }
 
-class MyHomePage extends ConsumerWidget {
-  MyHomePage({super.key, required this.properties});
+class MyHomePage extends ConsumerStatefulWidget{
   Map properties;
+  MyHomePage({super.key, required this.properties});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Motion Sensing'),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          children: [
-            ExpansionTile(
-              title: const Text('Add IMUs'),
-              children: [
-                IMUList(),
-              ],
-            ),
-            ExpansionTile(
-              title: const Text('Add Feedback sensors'),
-              children: [
-                IMUList(isFeedbackList: true,),
-              ],
-            ),
-            ExpansionTile(
-              title: const Text('Add IMUs'),
-              children: ref.watch(imusProvider).imus.map((e) => Text(e)).toList(),
-            ),
-            ExpansionTile(
-              title: const Text('Add Feedback sensors'),
-              children: ref.watch(imusProvider).feedbacks.map((e) => Text(e)).toList(),
-            )
-          ],
+  ConsumerState<MyHomePage> createState() => _MyHomePage();
+}
+
+class _MyHomePage extends ConsumerState<MyHomePage>{
+  int fadeStackIndex = 0;
+  List<Widget> fadeStackChildren = [];
+
+  @override
+  Widget build(BuildContext context) {
+    if(fadeStackChildren.isEmpty) {
+      fadeStackChildren = [
+        const Image(image: AssetImage('assets/images/logo_cropped.png')),
+        ClipRRect(
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
+          child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: DashControl(properties: widget.properties,)
+          ),
         ),
-      ),
-      body: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10),
-              child: FractionallySizedBox(
-                widthFactor: 0.5,
-                child: Card(
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                  elevation: Theme.of(context).cardTheme.elevation,
-                  color: Colors.white,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Expanded(child: Image(image: AssetImage('assets/images/logo_cropped.png'))),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(child: DashControl(properties: properties,)),
-                        ],
-                      ),
-                    ],
-                  ),
+        FractionallySizedBox(
+          widthFactor: 0.6,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: const BorderRadius.all(Radius.circular(10))
+                ),
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ExpansionTile(
+                      title: const Text('Add IMUs'),
+                      children: [
+                        IMUList(),
+                      ],
+                    ),
+                    ExpansionTile(
+                      title: const Text('Add Feedback sensors'),
+                      children: [
+                        IMUList(isFeedbackList: true,),
+                      ],
+                    ),
+                  ],
                 ),
               ),
+            ),
+          ),
+        ),
+      ];
+    }
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          const Image(
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              image: AssetImage('assets/images/bg.png')
+          ),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: AnimatedIndexedStack(
+                      index: fadeStackIndex,
+                      children: fadeStackChildren
+                  ),
+                ),
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: ref.watch(chosenAlgorithmProvider).chosenAlg == ''
+                            && fadeStackIndex == 1
+                            ? Colors.grey.shade100.withOpacity(0.1)
+                            : Theme.of(context).cardColor
+                      ),
+                      child: IconButton(
+                          onPressed: () => setState(() {
+                            if(widget.properties['alg_name'] == null && fadeStackIndex == 1) {
+                              showDialog(
+                                  context: context,
+                                  builder: (context) => const AlertDialog(content: Text('Please select an algorithm to continue'),)
+                              );
+                              return;
+                            } else if(fadeStackIndex < fadeStackChildren.length - 1) {
+                              fadeStackIndex += 1;
+                              return;
+                            }
+
+                            ref.read(requestAnswerProvider).setQuery('set_params');
+                            ref.read(requestAnswerProvider).setParamsMap(widget.properties);
+                            ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
+                            ref.read(requestAnswerProvider).filename = widget.properties['output_file'];
+                            Navigator.of(context).pushNamed('chart_dash_route');
+                          }),
+                          icon: const Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                    blurRadius: 5,
+                                    color: Colors.grey
+                                )
+                              ]
+                          )
+                      ),
+                    ),
+                  ),
+                )
+              ],
             ),
           )
         ],

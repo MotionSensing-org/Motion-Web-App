@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,8 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import 'dart:async';
 import 'dart:collection';
 import 'package:csv/csv.dart';
+
+const narrowWidth = 680;
 
 class RawData {
   int timeStep;
@@ -414,49 +417,83 @@ class _ChartDash extends ConsumerState<ChartDash> {
   List tapped = [];
   List types = [];
 
-  Stack createStack(BuildContext context, BoxConstraints constraints) {
+  Widget createStackOrList(BuildContext context, BoxConstraints constraints) {
     var height = constraints.maxHeight;
     var width = constraints.maxWidth;
 
-    return Stack(
-      children: List.generate(tapped.length, (i) {
-        return AnimatedPositioned(
-          top: tapped[i] ? 0 : height * 0.65,
-          bottom: tapped[i] ? height * 0.35 : 0,
-          // height: tapped[i] ? 0.75 * height : 0.25 * height,
-          left: tapped[i] ? 0 : (i * width / tapped.length),
-          // right: tapped[i] ? 0 : ((tapped.length - i - 1) * width / tapped.length),
-          width: tapped[i] ? width : width / tapped.length,
-          duration: const Duration(milliseconds: 900),
-          curve: Curves.fastOutSlowIn,
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                for(int j = 0; j < tapped.length; j++) {
-                  if(j == i) {
-                    tapped[j] = !tapped[j];
-                  } else {
-                    tapped[j] = false;
+    if(MediaQuery.of(context).size.width > narrowWidth) {
+      return Stack(
+        children: List.generate(tapped.length, (i) {
+          return AnimatedPositioned(
+            top: tapped[i] ? 0 : height * 0.65,
+            bottom: tapped[i] ? height * 0.35 : 0,
+            // height: tapped[i] ? 0.75 * height : 0.25 * height,
+            left: tapped[i] ? 0 : (i * width / tapped.length),
+            // right: tapped[i] ? 0 : ((tapped.length - i - 1) * width / tapped.length),
+            width: tapped[i] ? width : width / tapped.length,
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.fastOutSlowIn,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  for(int j = 0; j < tapped.length; j++) {
+                    if(j == i) {
+                      tapped[j] = !tapped[j];
+                    } else {
+                      tapped[j] = false;
+                    }
                   }
-                }
 
-                // if(tapped[i]) {
-                //   bringToTheTopOfStack(i);
-                // }
-              });
-            },
-            child: Card(
-              color: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key)),
+                  // if(tapped[i]) {
+                  //   bringToTheTopOfStack(i);
+                  // }
+                });
+              },
+              child: Card(
+                color: Colors.white,
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      Expanded(child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key))),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-        );
-      }),
-    );
+          );
+        }),
+      );
+    }
+
+    return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
+      var size = min(constraints.maxWidth, constraints.maxHeight);
+      return ListView.builder(
+          shrinkWrap: true,
+          scrollDirection: Axis.vertical,
+          itemCount: types.length,
+          itemBuilder: (BuildContext context, int index) {
+            return Container(
+              width: size,
+              height: size,
+              child: Card(
+                color: Colors.white,
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      Expanded(child: DataChart(imu: widget.imu, dataType: types[index], key: ValueKey(_key))),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+      );
+    });
+
   }
 
   @override
@@ -468,7 +505,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
     }
 
     return LayoutBuilder(
-      builder: createStack,
+      builder: createStackOrList,
     );
   }
 }
