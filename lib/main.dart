@@ -923,48 +923,84 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                 ),
                 Flexible(
                   fit: FlexFit.loose,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: ref.watch(chosenAlgorithmProvider).chosenAlg == ''
-                            && fadeStackIndex == 1
-                            ? Colors.grey.shade100.withOpacity(0.1)
-                            : Theme.of(context).cardColor
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 500),
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: fadeStackIndex == 0
+                                  ? Colors.grey.shade100.withOpacity(0.1)
+                                  : Theme.of(context).cardColor
+                          ),
+                          child: IconButton(
+                              onPressed: () => setState(() {
+                                if(fadeStackIndex > 0) {
+                                  fadeStackIndex -= 1;
+                                  return;
+                                }
+                              }),
+                              icon: const Icon(
+                                  Icons.arrow_back,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                        blurRadius: 5,
+                                        color: Colors.grey
+                                    )
+                                  ]
+                              )
+                          ),
+                        ),
                       ),
-                      child: IconButton(
-                          onPressed: () => setState(() {
-                            if(widget.properties['alg_name'] == null && fadeStackIndex == 1) {
-                              showDialog(
-                                  context: context,
-                                  builder: (context) => const AlertDialog(content: Text('Please select an algorithm to continue'),)
-                              );
-                              return;
-                            } else if(fadeStackIndex < fadeStackChildren.length - 1) {
-                              fadeStackIndex += 1;
-                              return;
-                            }
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 500),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: ref.watch(chosenAlgorithmProvider).chosenAlg == ''
+                                && fadeStackIndex == 1
+                                ? Colors.grey.shade100.withOpacity(0.1)
+                                : Theme.of(context).cardColor
+                          ),
+                          child: IconButton(
+                              onPressed: () => setState(() {
+                                if(widget.properties['alg_name'] == null && fadeStackIndex == 1) {
+                                  showDialog(
+                                      context: context,
+                                      builder: (context) => const AlertDialog(content: Text('Please select an algorithm to continue'),)
+                                  );
+                                  return;
+                                } else if(fadeStackIndex < fadeStackChildren.length - 1) {
+                                  fadeStackIndex += 1;
+                                  return;
+                                }
 
-                            ref.read(requestAnswerProvider).setQuery('set_params');
-                            ref.read(requestAnswerProvider).setParamsMap(widget.properties);
-                            ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
-                            ref.read(requestAnswerProvider).filename = widget.properties['output_file'];
-                            Navigator.of(context).pushNamed('chart_dash_route');
-                          }),
-                          icon: const Icon(
-                              Icons.arrow_forward,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                    blurRadius: 5,
-                                    color: Colors.grey
-                                )
-                              ]
-                          )
+                                ref.read(requestAnswerProvider).setQuery('set_params');
+                                ref.read(requestAnswerProvider).setParamsMap(widget.properties);
+                                ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
+                                ref.read(requestAnswerProvider).filename = widget.properties['output_file'];
+                                Navigator.of(context).pushNamed('chart_dash_route');
+                              }),
+                              icon: const Icon(
+                                  Icons.arrow_forward,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                        blurRadius: 5,
+                                        color: Colors.grey
+                                    )
+                                  ]
+                              )
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 )
               ],
