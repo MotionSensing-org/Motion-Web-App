@@ -101,40 +101,65 @@ class _AlgParams extends ConsumerState<AlgParams>{
         )
     );
     params.add(
-        Card(
-          color: Colors.white,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-          elevation: Theme.of(context).cardTheme.elevation,
-          child: TextButton(
-            child: const Text(
-              'Select output file',
-              style: TextStyle(
-                  color: Colors.grey
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Card(
+              color: Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+              elevation: Theme.of(context).cardTheme.elevation,
+              child: TextButton(
+                child: const Text(
+                  'Select output file',
+                  style: TextStyle(
+                      color: Colors.grey
+                  ),
+                ),
+                onPressed: () async {
+                  final DateTime now = DateTime.now();
+                  String? outputFile = await FilePicker.platform.saveFile(
+                      dialogTitle: 'Please select an output file:',
+                      fileName: '${now.year}-${now.month}-${now.day}--${now.hour}-${now.minute}-${now.second}',
+                      allowedExtensions: ['csv'],
+                      type: FileType.custom
+                  );
+
+                  if (outputFile != null) {
+                    if(!outputFile.contains('.csv')) {
+                      outputFile += '.csv';
+                    }
+                  } //User cancelled the file picker
+
+                  widget.properties['output_file'] = outputFile;
+                  setState(() {
+                    if(widget.properties['output_file'] != null){
+                      outputFileForDisplay = widget.properties['output_file'];
+                    }
+                  });
+                },
               ),
             ),
-            onPressed: () async {
-              final DateTime now = DateTime.now();
-              String? outputFile = await FilePicker.platform.saveFile(
-                  dialogTitle: 'Please select an output file:',
-                  fileName: '${now.year}-${now.month}-${now.day}--${now.hour}-${now.minute}-${now.second}',
-                  allowedExtensions: ['csv'],
-                  type: FileType.custom
-              );
-
-              if (outputFile != null) {
-                if(!outputFile.contains('.csv')) {
-                  outputFile += '.csv';
-                }
-              } //User cancelled the file picker
-
-              widget.properties['output_file'] = outputFile;
-              setState(() {
-                if(widget.properties['output_file'] != null){
-                  outputFileForDisplay = widget.properties['output_file'];
-                }
-              });
-            },
-          ),
+            Card(
+              color: Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+              elevation: Theme.of(context).cardTheme.elevation,
+              child: TextButton(
+                child: const Text(
+                  'Clear',
+                  style: TextStyle(
+                      color: Colors.grey
+                  ),
+                ),
+                onPressed: () {
+                  setState(() {
+                    widget.properties['output_file'] = null;
+                    outputFileForDisplay = '';
+                  });
+                },
+              ),
+            ),
+          ],
         )
     );
 
@@ -456,7 +481,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
           ),
         ));
         // ref.read(requestAnswerProvider).filename = value;
-      } else {
+      } else if(value != null) {
         algParams.add(Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
@@ -494,6 +519,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
             ),
             onPressed: () {
               ref.read(requestAnswerProvider).startStopDataCollection(stop: true);
+              widget.properties['output_file'] = null;
               Navigator.of(context).pushNamed('home');
             },
           ),
