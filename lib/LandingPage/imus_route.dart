@@ -23,7 +23,7 @@ class IMUList extends ConsumerStatefulWidget {
 
 class _IMUListState extends ConsumerState<IMUList> {
   List imus = [];
-  ListView listus = ListView();
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -35,6 +35,7 @@ class _IMUListState extends ConsumerState<IMUList> {
             heroTag: 'Add ${widget.isFeedbackList ? 'feedback' : 'IMU'}',
             onPressed: () {
               setState(() {
+                ref.read(imusCounter).inc();
                 widget.addedIMUs.add(TextFieldClass(
                   controller: TextEditingController(),
                 ));
@@ -54,6 +55,7 @@ class _IMUListState extends ConsumerState<IMUList> {
                   startActionPane: ActionPane(
                       dismissible: DismissiblePane(onDismissed: () {
                         setState(() {
+                          ref.read(imusCounter).dec();
                           widget.addedIMUs.removeAt(index);
                         });
                       }),
@@ -62,6 +64,7 @@ class _IMUListState extends ConsumerState<IMUList> {
                         SlidableAction(
                           onPressed: (BuildContext context) {
                             setState(() {
+                              ref.read(imusCounter).dec();
                               widget.addedIMUs.removeAt(index);
                             });
                           },
@@ -76,6 +79,7 @@ class _IMUListState extends ConsumerState<IMUList> {
                     child: FractionallySizedBox(
                       widthFactor: 0.7,
                       child: TextFormField(
+                        style: Theme.of(context).textTheme.bodyText1,
                         textAlign: TextAlign.center,
                         controller: widget.addedIMUs[index].controller..text = widget.addedIMUs[index].imuMac,
                         // initialValue: '88:6B:0F:E1:D8:68',
@@ -178,15 +182,24 @@ class _IMUsRoute extends ConsumerState<IMUsRoute> {
                                         ),
                                       ),
                                     ),
-                                    TextButton(
-                                        onPressed: () {
-                                          // ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
-                                          Navigator.pop(context);
-                                        },
-                                        child: const Text(
-                                            'Continue',
-                                          style: TextStyle(color: Colors.green),
-                                        )
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                            color: Theme.of(context).cardColor,
+                                            borderRadius: const BorderRadius.all(Radius.circular(10))
+                                        ),
+                                        child: TextButton(
+                                            onPressed: () {
+                                              // ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
+                                              Navigator.pop(context);
+                                            },
+                                            child: const Text(
+                                                'Continue',
+                                              style: TextStyle(color: Colors.green),
+                                            )
+                                        ),
+                                      ),
                                     )
                                   ],
                                 ),

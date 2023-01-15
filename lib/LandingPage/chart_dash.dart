@@ -306,30 +306,23 @@ class AlgListManager extends ChangeNotifier {
   }
 }
 
-class IMUManager extends ChangeNotifier {
-  List<String> imus = [];
-  List<String> feedbacks = [];
-
-  void addIMU(String imu, {bool isFeedback = false}) {
-    if(isFeedback) {
-      feedbacks.add(imu);
-    } else {
-      imus.add(imu);
-    }
+class IMUsCounter extends ChangeNotifier {
+  int imuCount = 0;
+  void inc() {
+    imuCount += 1;
+    notifyListeners();
   }
 
-  List<String> getIMUs({bool isFeedback=false}) {
-    if(isFeedback) {
-      return List.from(feedbacks);
-    }
-
-    return List.from(imus);
+  void dec() {
+    imuCount -= 1;
+    notifyListeners();
   }
 }
 
-final imusProvider = ChangeNotifierProvider((ref) {
-  return IMUManager();
+final imusCounter = ChangeNotifierProvider((ref) {
+  return IMUsCounter();
 });
+
 
 final playPauseProvider = ChangeNotifierProvider((ref) {
   return PlayPause();
@@ -396,19 +389,19 @@ class _DataChart extends ConsumerState<DataChart> {
       );
     }
 
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: SfCartesianChart(
-        title: ChartTitle(
-            text: widget.dataType
-        ),
-        legend: Legend(isVisible: true),
-        zoomPanBehavior: _zoomPanBehavior,
-        // tooltipBehavior: _tooltipBehavior,
-        series: series,
-        primaryXAxis:
-        NumericAxis(edgeLabelPlacement: EdgeLabelPlacement.shift),
+    return SfCartesianChart(
+      title: ChartTitle(
+          text: widget.dataType,
+          textStyle: const TextStyle(
+            color: Colors.black
+          )
       ),
+      legend: Legend(isVisible: true),
+      zoomPanBehavior: _zoomPanBehavior,
+      // tooltipBehavior: _tooltipBehavior,
+      series: series,
+      primaryXAxis:
+      NumericAxis(edgeLabelPlacement: EdgeLabelPlacement.shift),
     );
   }
 }
@@ -468,11 +461,10 @@ class _ChartDash extends ConsumerState<ChartDash> {
                 shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    children: [
-                      Expanded(child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key))),
-                    ],
-                  ),
+                  child: FractionallySizedBox(
+                      widthFactor: 0.9,
+                      heightFactor: 0.9,
+                      child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key))),
                 ),
               ),
             ),

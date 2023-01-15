@@ -59,6 +59,23 @@ class MyApp extends ConsumerWidget {
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
         // primarySwatch: Colors.green,
+        expansionTileTheme: ExpansionTileThemeData(
+          iconColor: Colors.blue.shade700,
+          collapsedIconColor: Colors.white,
+          collapsedTextColor: Colors.white,
+          textColor: Colors.blue.shade700,
+        ),
+        textTheme: const TextTheme(
+          bodyText1: TextStyle(
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                    blurRadius: 5,
+                    color: Colors.grey
+                )
+              ]
+          ),
+        ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.blue
         ),
@@ -69,6 +86,7 @@ class MyApp extends ConsumerWidget {
         fontFamily: "Arial",
         scaffoldBackgroundColor: Colors.white,
         cardColor: Colors.grey.shade100.withOpacity(0.4),
+        dialogBackgroundColor: Colors.grey.shade100.withOpacity(0.4),
         cardTheme: const CardTheme(
           elevation: 0
         )
@@ -102,15 +120,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
     params.add(
         Text(
           outputFileForDisplay.split('\\').last,
-          style: const TextStyle(
-              color: Colors.white,
-              shadows: [
-                Shadow(
-                    blurRadius: 5,
-                    color: Colors.grey
-                )
-              ]
-          ),
+          style: Theme.of(context).textTheme.bodyText1,
         )
     );
     params.add(
@@ -118,58 +128,70 @@ class _AlgParams extends ConsumerState<AlgParams>{
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Card(
-              color: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-              elevation: Theme.of(context).cardTheme.elevation,
-              child: TextButton(
-                child: const Text(
-                  'Select output file',
-                  style: TextStyle(
-                      color: Colors.grey
+            Flexible(
+              fit: FlexFit.loose,
+              child: Card(
+                color: Colors.white,
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                elevation: Theme.of(context).cardTheme.elevation,
+                child: TextButton(
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Select output file',
+                      style: TextStyle(
+                          color: Colors.grey
+                      ),
+                    ),
                   ),
+                  onPressed: () async {
+                    final DateTime now = DateTime.now();
+                    String? outputFile = await FilePicker.platform.saveFile(
+                        dialogTitle: 'Please select an output file:',
+                        fileName: '${now.year}-${now.month}-${now.day}--${now.hour}-${now.minute}-${now.second}',
+                        allowedExtensions: ['csv'],
+                        type: FileType.custom
+                    );
+
+                    if (outputFile != null) {
+                      if(!outputFile.contains('.csv')) {
+                        outputFile += '.csv';
+                      }
+                    } //User cancelled the file picker
+
+                    widget.properties['output_file'] = outputFile;
+                    setState(() {
+                      if(widget.properties['output_file'] != null){
+                        outputFileForDisplay = widget.properties['output_file'];
+                      }
+                    });
+                  },
                 ),
-                onPressed: () async {
-                  final DateTime now = DateTime.now();
-                  String? outputFile = await FilePicker.platform.saveFile(
-                      dialogTitle: 'Please select an output file:',
-                      fileName: '${now.year}-${now.month}-${now.day}--${now.hour}-${now.minute}-${now.second}',
-                      allowedExtensions: ['csv'],
-                      type: FileType.custom
-                  );
-
-                  if (outputFile != null) {
-                    if(!outputFile.contains('.csv')) {
-                      outputFile += '.csv';
-                    }
-                  } //User cancelled the file picker
-
-                  widget.properties['output_file'] = outputFile;
-                  setState(() {
-                    if(widget.properties['output_file'] != null){
-                      outputFileForDisplay = widget.properties['output_file'];
-                    }
-                  });
-                },
               ),
             ),
-            Card(
-              color: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-              elevation: Theme.of(context).cardTheme.elevation,
-              child: TextButton(
-                child: const Text(
-                  'Clear',
-                  style: TextStyle(
-                      color: Colors.grey
+            Flexible(
+              fit: FlexFit.loose,
+              child: Card(
+                color: Colors.white,
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                elevation: Theme.of(context).cardTheme.elevation,
+                child: TextButton(
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Clear',
+                      style: TextStyle(
+                          color: Colors.grey
+                      ),
+                    ),
                   ),
+                  onPressed: () {
+                    setState(() {
+                      widget.properties['output_file'] = null;
+                      outputFileForDisplay = '';
+                    });
+                  },
                 ),
-                onPressed: () {
-                  setState(() {
-                    widget.properties['output_file'] = null;
-                    outputFileForDisplay = '';
-                  });
-                },
               ),
             ),
           ],
@@ -184,20 +206,23 @@ class _AlgParams extends ConsumerState<AlgParams>{
           }
 
           params.add(FractionallySizedBox(
-            widthFactor: 0.4,
-            child: Card(
-              color: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
-              elevation: Theme.of(context).cardTheme.elevation,
-              child: TextField(
-                textAlign: TextAlign.center,
-                onChanged: (value){
-                  widget.properties[curAlgParams[i]['param_name']] = value;
-                },
-                decoration: InputDecoration(
-                  labelText: curAlgParams[i]['param_name'],
-                  border: const OutlineInputBorder(),
-                  hintText: 'Enter a value. default: ${curAlgParams[i]['default_value']}',
+            widthFactor: 0.6,
+            child: Tooltip(
+              message: curAlgParams[i]['param_name'],
+              child: Card(
+                color: Colors.white,
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
+                elevation: Theme.of(context).cardTheme.elevation,
+                child: TextField(
+                  textAlign: TextAlign.center,
+                  onChanged: (value){
+                    widget.properties[curAlgParams[i]['param_name']] = value;
+                  },
+                  decoration: InputDecoration(
+                    labelText: curAlgParams[i]['param_name'],
+                    border: const OutlineInputBorder(),
+                    hintText: 'Enter a value. default: ${curAlgParams[i]['default_value']}',
+                  ),
                 ),
               ),
             ),
@@ -216,36 +241,20 @@ class _AlgParams extends ConsumerState<AlgParams>{
                 children: [
                   Text(
                     curAlgParams[i]['param_name'],
-                    style: const TextStyle(
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                              blurRadius: 5,
-                              color: Colors.grey
-                          )
-                        ]
-                    ),
+                    style: Theme.of(context).textTheme.bodyText1,
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: DropdownButton(
-                        items: [for(int k = 0; k < values.length; k++) DropdownMenuItem<String>(
-                          value: values[k],
-                          child: Text(values[k]),
-                        )],
-                        dropdownColor: Colors.grey.shade100.withOpacity(0.6),
-                        icon: const Icon(
-                          Icons.arrow_downward,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                                blurRadius: 5,
-                                color: Colors.grey
-                            )
-                          ]
-                        ),
-                        value: dropdownValue,
-                        style: const TextStyle(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: DropdownButton(
+                          items: [for(int k = 0; k < values.length; k++) DropdownMenuItem<String>(
+                            value: values[k],
+                            child: Text(values[k]),
+                          )],
+                          dropdownColor: Colors.grey.shade100.withOpacity(0.6),
+                          icon: const Icon(
+                            Icons.arrow_downward,
                             color: Colors.white,
                             shadows: [
                               Shadow(
@@ -253,13 +262,16 @@ class _AlgParams extends ConsumerState<AlgParams>{
                                   color: Colors.grey
                               )
                             ]
-                        ),
-                        onChanged: (String? value) {
-                          setState(() {
-                            dropdownValue = value;
-                            widget.properties[curAlgParams[i]['param_name']] = dropdownValue;
-                          });
-                        }
+                          ),
+                          value: dropdownValue,
+                          style: Theme.of(context).textTheme.bodyText1,
+                          onChanged: (String? value) {
+                            setState(() {
+                              dropdownValue = value;
+                              widget.properties[curAlgParams[i]['param_name']] = dropdownValue;
+                            });
+                          }
+                      ),
                     ),
                   ),
                 ],
@@ -298,14 +310,7 @@ class _DashControl extends ConsumerState<DashControl> {
       value: algorithms[i],
       child: Text(
           algorithms[i],
-          style: const TextStyle(
-              shadows: [
-                Shadow(
-                    blurRadius: 5,
-                    color: Colors.grey
-                )
-              ]
-          ),
+          style: Theme.of(context).textTheme.bodyText1,
       ),
     )];
 
@@ -318,64 +323,68 @@ class _DashControl extends ConsumerState<DashControl> {
         color: Theme.of(context).cardColor,
         borderRadius: const BorderRadius.all(Radius.circular(10))
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Text(
-                'Please choose an algorithm:',
-              style: TextStyle(
-                  color: Colors.white,
-                shadows: [
-                  Shadow(
-                      blurRadius: 5,
-                      color: Colors.grey
-                  )
-                ]
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: DropdownButton(
-                  items: algorithmsList,
-                  dropdownColor: Colors.grey.shade100.withOpacity(0.6),
-                  icon: const Icon(
-                    Icons.arrow_downward,
-                    color: Colors.white,
-                      shadows: [
-                      Shadow(
-                          blurRadius: 5,
-                          color: Colors.grey
-                      )
-                    ]
+      child: FractionallySizedBox(
+        widthFactor: 0.6,
+        child: ListView(
+          shrinkWrap: true,
+          scrollDirection: Axis.vertical,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                      'Please choose an algorithm:',
+                    style: Theme.of(context).textTheme.bodyText1,
                   ),
-                  value: dropdownValue,
-                  style: const TextStyle(color: Colors.white),
-                  onChanged: (String? value) {
-                    setState(() {
-                      dropdownValue = value;
-                      widget.properties['alg_name'] = value;
-                      ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
-                    });
-                  }
-              ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: DropdownButton(
+                          items: algorithmsList,
+                          dropdownColor: Colors.grey.shade100.withOpacity(0.6),
+                          icon: const Icon(
+                            Icons.arrow_downward,
+                            color: Colors.white,
+                              shadows: [
+                              Shadow(
+                                  blurRadius: 5,
+                                  color: Colors.grey
+                              )
+                            ]
+                          ),
+                          value: dropdownValue,
+                          style: Theme.of(context).textTheme.bodyText1,
+                          onChanged: (String? value) {
+                            setState(() {
+                              dropdownValue = value;
+                              widget.properties['alg_name'] = value;
+                              ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
+                            });
+                          }
+                      ),
+                    ),
+                  ),
+                ),
+                AnimatedCrossFade(
+                    crossFadeState: chosenAlgorithm == '' ? CrossFadeState.showFirst
+                        : CrossFadeState.showSecond,
+                    duration: const Duration(milliseconds: 300),
+                    firstChild: const SizedBox.shrink(),
+                    secondChild: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: AlgParams(properties: widget.properties,),
+                    )
+                )
+              ],
             ),
-          ),
-          AnimatedCrossFade(
-              crossFadeState: chosenAlgorithm == '' ? CrossFadeState.showFirst
-                  : CrossFadeState.showSecond,
-              duration: const Duration(milliseconds: 300),
-              firstChild: const SizedBox.shrink(),
-              secondChild: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: AlgParams(properties: widget.properties,),
-              )
-          )
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -474,10 +483,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
           padding: const EdgeInsets.all(8.0),
           child: Text(
               value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20
-            ),
+            style: Theme.of(context).textTheme.bodyText1,
           ),
         ));
       } else if(key == 'output_file' && value != null) {
@@ -487,10 +493,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
           child: Text(
             'Output file:\n$nameWithoutPath',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-                color: Colors.white,
-                // fontSize: 20
-            ),
+            style: Theme.of(context).textTheme.bodyText1,
           ),
         ));
         // ref.read(requestAnswerProvider).filename = value;
@@ -499,10 +502,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
           padding: const EdgeInsets.all(8.0),
           child: Text(
               '$key: $value',
-              style: const TextStyle(
-                  color: Colors.white,
-                  // fontSize: 20
-              )
+              style: Theme.of(context).textTheme.bodyText1
           ),
         ));
       }
@@ -775,12 +775,25 @@ class MyHomePage extends ConsumerStatefulWidget{
 class _MyHomePage extends ConsumerState<MyHomePage>{
   int animatedStackIndex = 0;
   List<Widget> animatedStackChildren = [];
+  bool canContinue = true;
 
   @override
   Widget build(BuildContext context) {
+    int imusNumber = ref.watch(imusCounter).imuCount;
+    String chosenAlg = ref.watch(chosenAlgorithmProvider).chosenAlg;
+
+    if(animatedStackIndex == 1) {
+      canContinue = imusNumber > 0;
+    } else if(animatedStackIndex == 2) {
+      canContinue = chosenAlg.isNotEmpty;
+    }
+
     if(animatedStackChildren.isEmpty) {
       animatedStackChildren = [
-        const Image(image: AssetImage('assets/images/logo_round.png')),
+        const Padding(
+          padding: EdgeInsets.all(8.0),
+          child: Image(image: AssetImage('assets/images/logo_round.png')),
+        ),
         FractionallySizedBox(
           widthFactor: 0.6,
           child: ClipRRect(
@@ -796,13 +809,13 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                   shrinkWrap: true,
                   children: [
                     ExpansionTile(
-                      title: const Text('Add IMUs'),
+                      title: const Text('Add IMUs',),
                       children: [
                         IMUList(addedIMUs: widget.addedIMUs['imus']!,),
                       ],
                     ),
                     ExpansionTile(
-                      title: const Text('Add Feedback sensors'),
+                      title: const Text('Add Feedback sensors',),
                       children: [
                         IMUList(isFeedbackList: true, addedIMUs: widget.addedIMUs['feedbacks']!,),
                       ],
@@ -886,21 +899,42 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                           duration: const Duration(milliseconds: 500),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: ref.watch(chosenAlgorithmProvider).chosenAlg == ''
-                                && animatedStackIndex == 1
-                                ? Colors.grey.shade100.withOpacity(0.1)
-                                : Theme.of(context).cardColor
+                            color: canContinue
+                                ? Theme.of(context).cardColor
+                                : Colors.grey.shade100.withOpacity(0.1)
                           ),
                           child: IconButton(
                               onPressed: () => setState(() {
-                                if(animatedStackIndex == 1) {
+                                if(!canContinue && animatedStackIndex == 1) {
+                                  showDialog(
+                                      context: context,
+                                      builder: (context) => BackdropFilter(
+                                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                          child: AlertDialog(
+                                            content: Text(
+                                              'IMU list cannot be empty',
+                                              style: Theme.of(context).textTheme.bodyText1,
+                                            ),
+                                          )
+                                      )
+                                  );
+                                  return;
+                                } else if(animatedStackIndex == 1) {
                                   animatedStackIndex += 1;
                                   Navigator.of(context).pushNamed('imus_route');
                                   return;
-                                } else if(widget.properties['alg_name'] == null && animatedStackIndex == 2) {
+                                } else if(!canContinue && animatedStackIndex == 2) {
                                   showDialog(
                                       context: context,
-                                      builder: (context) => const AlertDialog(content: Text('Please select an algorithm to continue'),)
+                                      builder: (context) => BackdropFilter(
+                                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                          child: AlertDialog(
+                                            content: Text(
+                                              'Please select an algorithm to continue',
+                                              style: Theme.of(context).textTheme.bodyText1,
+                                            ),
+                                          )
+                                      )
                                   );
                                   return;
                                 } else if(animatedStackIndex < animatedStackChildren.length - 1) {
