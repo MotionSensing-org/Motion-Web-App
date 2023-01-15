@@ -14,6 +14,13 @@ import 'package:csv/csv.dart';
 
 const narrowWidth = 680;
 
+class TextFieldClass{
+  TextEditingController controller = TextEditingController();
+  String imuMac;
+
+  TextFieldClass({required this.controller, this.imuMac='88:6B:0F:E1:D8:68'});
+}
+
 class RawData {
   int timeStep;
   double value;
@@ -41,6 +48,7 @@ class RequestHandler extends ChangeNotifier {
   bool stop = true;
   bool createdFile = false;
   bool saveFile = true;
+  bool shouldInitBuffers = false;
   final int bufferSize = 500;
 
   RequestHandler(this.url, this.ref) {
@@ -120,9 +128,34 @@ class RequestHandler extends ChangeNotifier {
     return checkpointDataBuffer[imu];
   }
 
+  void initBuffers() {
+    dataBuffer = {};
+    checkpointDataBuffer = {};
+    for (var imu in imus) {
+      dataBuffer[imu] = {};
+      dataTypes.forEach((key, value) {
+        for (var type in value) {
+          dataBuffer[imu][type] =
+              Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+        }
+      });
+    }
+
+    dataBuffer.forEach((imu, imuData) {
+      checkpointDataBuffer[imu] = {};
+      dataBuffer[imu].forEach((dataType, data) {
+        checkpointDataBuffer[imu][dataType] = data.toList();
+      });
+    });
+  }
+
   void updateDataSource(Timer timer) async {
     List row = [];
     List headers = [];
+
+    if(imus.isEmpty) {
+      return;
+    }
 
     if(algorithms.isEmpty) {
       await getAlgList();
@@ -134,10 +167,10 @@ class RequestHandler extends ChangeNotifier {
       notifyListeners();
     }
 
-    if(imus.isEmpty) {
-      await getImus();
-      notifyListeners();
-    }
+    // if(imus.isEmpty) {
+    //   await getImus();
+    //   notifyListeners();
+    // }
 
     if(curAlg == '') {
       await getCurAlg();
@@ -149,24 +182,7 @@ class RequestHandler extends ChangeNotifier {
       notifyListeners();
     }
 
-    if(dataBuffer.isEmpty) {
-      for (var imu in imus) {
-        dataBuffer[imu] = {};
-        dataTypes.forEach((key, value) {
-          for (var type in value) {
-            dataBuffer[imu][type] =
-                Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-          }
-        });
-      }
 
-      dataBuffer.forEach((imu, imuData) {
-        checkpointDataBuffer[imu] = {};
-        dataBuffer[imu].forEach((dataType, data) {
-          checkpointDataBuffer[imu][dataType] = data.toList();
-        });
-      });
-    }
 
     if(query == '?request_type=set_params') {
       var body = json.encode(paramsToSet);
@@ -175,9 +191,16 @@ class RequestHandler extends ChangeNotifier {
       return;
     }
 
+    if(dataBuffer.isEmpty || shouldInitBuffers) {
+      initBuffers();
+      shouldInitBuffers = false;
+    }
+
     if(stop) {
       return;
     }
+
+
 
     query = '?request_type=$curAlg';
 
@@ -188,6 +211,10 @@ class RequestHandler extends ChangeNotifier {
       headers.add('IMU');
       dataTypes.forEach((key, value) async {
         for (var type in value) {
+          if(decodedData[imu] == null) {
+            continue;
+          }
+
           headers.add(type);
           var strList = decodedData[imu][type]
               .toString()
@@ -248,6 +275,17 @@ class RequestHandler extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  Future connectToIMUs(Map<String, List<TextFieldClass>> addedIMUs) async {
+    Map<String, List<String>> addedIMUSStrings = {
+      'imus': addedIMUs['imus']!.map((e) => e.imuMac).toList(),
+      'feedbacks': addedIMUs['feedbacks']!.map((e) => e.imuMac).toList()
+    };
+    // imus = addedIMUSStrings['imus']!;
+    var body = json.encode(addedIMUSStrings);
+    // var body = json.encode({'imus': ['8889989'], 'feedbacks': []});
+    return await setParams(Uri.parse('$url?request_type=set_imus'), body);
+  }
 }
 
 class PlayPause extends ChangeNotifier {
@@ -298,7 +336,7 @@ final playPauseProvider = ChangeNotifierProvider((ref) {
 });
 
 final requestAnswerProvider = ChangeNotifierProvider((ref) {
-  return RequestHandler('http://127.0.0.1:8080/', ref);
+  return RequestHandler('http://127.0.0.1:5000/', ref);
 });
 
 final chosenAlgorithmProvider = ChangeNotifierProvider((ref) {
@@ -358,16 +396,19 @@ class _DataChart extends ConsumerState<DataChart> {
       );
     }
 
-    return SfCartesianChart(
-      title: ChartTitle(
-          text: widget.dataType
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: SfCartesianChart(
+        title: ChartTitle(
+            text: widget.dataType
+        ),
+        legend: Legend(isVisible: true),
+        zoomPanBehavior: _zoomPanBehavior,
+        // tooltipBehavior: _tooltipBehavior,
+        series: series,
+        primaryXAxis:
+        NumericAxis(edgeLabelPlacement: EdgeLabelPlacement.shift),
       ),
-      legend: Legend(isVisible: true),
-      zoomPanBehavior: _zoomPanBehavior,
-      // tooltipBehavior: _tooltipBehavior,
-      series: series,
-      primaryXAxis:
-      NumericAxis(edgeLabelPlacement: EdgeLabelPlacement.shift),
     );
   }
 }

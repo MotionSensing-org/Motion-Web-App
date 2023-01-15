@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -5,6 +7,7 @@ import 'package:iot_project/LandingPage/chart_dash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'LandingPage/imus_route.dart';
 
 
 void main() {
@@ -15,17 +18,27 @@ class MyApp extends ConsumerWidget {
   MyApp({super.key});
   Map routes = {};
   Map properties = {};
+  Map<String, List<TextFieldClass>> addedIMUs = {'imus': [], 'feedbacks': []};
   List imus = [];
   Route<dynamic> generateRoute(RouteSettings settings) {
     if(settings.name == 'home') {
       return MaterialPageRoute(
           settings: RouteSettings(name: settings.name),
-          builder: (context) => ProviderScope(child: MyHomePage(properties: properties,))
+          builder: (context) => ProviderScope(child: MyHomePage(properties: properties, addedIMUs: addedIMUs,))
+      );
+    } else if(settings.name == 'chart_dash_route') {
+      return MaterialPageRoute(
+          settings: RouteSettings(name: settings.name),
+          builder: (context) => ProviderScope(child: ChartDashRoute(properties: properties))
       );
     }
-    return MaterialPageRoute(
+    return MaterialPageRoute( //name='imus_route'
         settings: RouteSettings(name: settings.name),
-        builder: (context) => ProviderScope(child: ChartDashRoute(properties: properties))
+        builder: (context) => ProviderScope(child: Builder(
+            builder: (context) {
+              return IMUsRoute(addedIMUs: addedIMUs, properties: properties,);
+            }
+        ))
     );
   }
   // This widget is the root of your application.
@@ -60,7 +73,7 @@ class MyApp extends ConsumerWidget {
           elevation: 0
         )
       ),
-      home: ProviderScope(child: MyHomePage(properties: properties,)),
+      home: ProviderScope(child: MyHomePage(properties: properties, addedIMUs: addedIMUs,)),
       initialRoute: 'home',
       onGenerateRoute: generateRoute,
     );
@@ -520,7 +533,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
             onPressed: () {
               ref.read(requestAnswerProvider).startStopDataCollection(stop: true);
               widget.properties['output_file'] = null;
-              Navigator.of(context).pushNamed('home');
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
           ),
         ),
@@ -635,9 +648,12 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                                                 children: [
                                                   const Flexible(
                                                     fit: FlexFit.loose,
-                                                    child: Icon(
-                                                      Icons.sensors,
-                                                      color: _connectedIMUColor,
+                                                    child: FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      child: Icon(
+                                                        Icons.sensors,
+                                                        color: _connectedIMUColor,
+                                                      ),
                                                     ),
                                                   ),
                                                   Flexible(
@@ -646,10 +662,13 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                                                       visible: MediaQuery.of(context).size.width > narrowWidth ? true : false,
                                                       child: Padding(
                                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                        child: Text(
-                                                          imus[index].toString().substring(12),
-                                                          style: const TextStyle(
-                                                            color: Colors.grey,
+                                                        child: FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          child: Text(
+                                                            imus[index].toString().substring(12),
+                                                            style: const TextStyle(
+                                                              color: Colors.grey,
+                                                            ),
                                                           ),
                                                         ),
                                                       ),
@@ -744,101 +763,10 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
   }
 }
 
-class TextFieldClass{
-  TextEditingController controller = TextEditingController();
-  String imuMac;
-
-  TextFieldClass({required this.controller, this.imuMac='88:6B:0F:E1:D8:68'});
-}
-
-class IMUList extends ConsumerStatefulWidget {
-  IMUList({Key? key, this.isFeedbackList=false}) : super(key: key);
-  List<TextFieldClass> addedIMUs = [];
-  bool isFeedbackList;
-
-  List<String> getList() => addedIMUs.map((e) => e.imuMac).toList();
-
-  @override
-  ConsumerState<IMUList> createState() => _IMUListState();
-}
-
-class _IMUListState extends ConsumerState<IMUList> {
-  List imus = [];
-  ListView listus = ListView();
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: FloatingActionButton(
-            heroTag: 'Add ${widget.isFeedbackList ? 'feedback' : 'IMU'}',
-            onPressed: () {
-              setState(() {
-                widget.addedIMUs.add(TextFieldClass(
-                    controller: TextEditingController(),
-                ));
-              });
-            },
-            tooltip: 'Add ${widget.isFeedbackList ? 'feedback' : 'IMU'}',
-            child: const Icon(Icons.plus_one),
-          ),
-        ),
-        Flexible(
-          child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: widget.addedIMUs.length,
-              itemBuilder: (context, index) {
-                return Slidable(
-                  key: UniqueKey(),
-                  startActionPane: ActionPane(
-                      dismissible: DismissiblePane(onDismissed: () {
-                        setState(() {
-                          widget.addedIMUs.removeAt(index);
-                        });
-                      }),
-                      motion: const ScrollMotion(),
-                      children: [
-                        SlidableAction(
-                            onPressed: (BuildContext context) {
-                              setState(() {
-                                widget.addedIMUs.removeAt(index);
-                              });
-                            },
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            icon: Icons.delete,
-                            label: 'Delete',
-                        )
-                      ]
-                  ),
-                  child: Center(
-                    child: FractionallySizedBox(
-                      widthFactor: 0.7,
-                      child: TextFormField(
-                        textAlign: TextAlign.center,
-                        controller: widget.addedIMUs[index].controller..text = widget.addedIMUs[index].imuMac,
-                        // initialValue: '88:6B:0F:E1:D8:68',
-                        onChanged: (value) {
-                          widget.addedIMUs[index].imuMac = value;
-                          // ref.read(imusProvider).addIMU(value, isFeedback: widget.isFeedbackList);
-                        },
-                      ),
-                    ),
-                  ),
-                );
-              }
-          ),
-        )
-      ],
-    );
-  }
-}
-
 class MyHomePage extends ConsumerStatefulWidget{
   Map properties;
-  MyHomePage({super.key, required this.properties});
+  Map<String, List<TextFieldClass>> addedIMUs;
+  MyHomePage({super.key, required this.properties, required this.addedIMUs});
 
   @override
   ConsumerState<MyHomePage> createState() => _MyHomePage();
@@ -853,13 +781,6 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
     if(animatedStackChildren.isEmpty) {
       animatedStackChildren = [
         const Image(image: AssetImage('assets/images/logo_round.png')),
-        ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(10)),
-          child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: DashControl(properties: widget.properties,)
-          ),
-        ),
         FractionallySizedBox(
           widthFactor: 0.6,
           child: ClipRRect(
@@ -877,19 +798,26 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                     ExpansionTile(
                       title: const Text('Add IMUs'),
                       children: [
-                        IMUList(),
+                        IMUList(addedIMUs: widget.addedIMUs['imus']!,),
                       ],
                     ),
                     ExpansionTile(
                       title: const Text('Add Feedback sensors'),
                       children: [
-                        IMUList(isFeedbackList: true,),
+                        IMUList(isFeedbackList: true, addedIMUs: widget.addedIMUs['feedbacks']!,),
                       ],
                     ),
                   ],
                 ),
               ),
             ),
+          ),
+        ),
+        ClipRRect(
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
+          child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: DashControl(properties: widget.properties,)
           ),
         ),
       ];
@@ -965,7 +893,11 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                           ),
                           child: IconButton(
                               onPressed: () => setState(() {
-                                if(widget.properties['alg_name'] == null && animatedStackIndex == 1) {
+                                if(animatedStackIndex == 1) {
+                                  animatedStackIndex += 1;
+                                  Navigator.of(context).pushNamed('imus_route');
+                                  return;
+                                } else if(widget.properties['alg_name'] == null && animatedStackIndex == 2) {
                                   showDialog(
                                       context: context,
                                       builder: (context) => const AlertDialog(content: Text('Please select an algorithm to continue'),)
@@ -976,10 +908,11 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                                   return;
                                 }
 
+                                ref.read(requestAnswerProvider).startStopDataCollection();
                                 ref.read(requestAnswerProvider).setQuery('set_params');
                                 ref.read(requestAnswerProvider).setParamsMap(widget.properties);
-                                ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
                                 ref.read(requestAnswerProvider).filename = widget.properties['output_file'];
+                                ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
                                 Navigator.of(context).pushNamed('chart_dash_route');
                               }),
                               icon: const Icon(
