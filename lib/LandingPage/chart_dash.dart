@@ -24,27 +24,6 @@ class RawData {
   }
 }
 
-// if(saveFile) {
-//   var status = await Permission.storage.status;
-//   if (!status.isGranted) {
-//     await Permission.storage.request();
-//   }
-//
-//   if (await Permission.storage.request().isGranted) {
-//     try {
-//       var outputFile = await setOutputFileName('test');
-//
-//       row.add(imu);
-//       row.addAll(rawDataList);
-//       String csv = const ListToCsvConverter().convert([row]);
-//       outputFile.writeAsString(csv);
-//     } catch (e) {
-//       print(e);
-//     }
-//   }
-//
-// }
-
 class RequestHandler extends ChangeNotifier {
   String url;
   String query = "?request_type=";
@@ -215,15 +194,12 @@ class RequestHandler extends ChangeNotifier {
               .replaceAll(RegExp(r'[\[\],]'), '')
               .split(' ')
               .toList();
-          // print('$type\n$strList');
           var rawDataList = strList
               .map((x) => RawData(strList.indexOf(x), double.parse(x)))
               .toList();
           for (int k = 0; k < rawDataList.length; k++) {
             rawDataList[k].setTimeStep = k;
           }
-          // print(strList);
-          // print(type);
           dataBuffer[imu][type].addAll(rawDataList);
           row.add(strList.last);
 
@@ -257,7 +233,6 @@ class RequestHandler extends ChangeNotifier {
             row.clear();
             outputFile?.writeAsString('$csv\n');
           } catch (e) {
-            // print(e);
           }
         }
       } else {
@@ -303,8 +278,6 @@ class IMUManager extends ChangeNotifier {
     } else {
       imus.add(imu);
     }
-    print(imus);
-    print(feedbacks);
   }
 
   List<String> getIMUs({bool isFeedback=false}) {

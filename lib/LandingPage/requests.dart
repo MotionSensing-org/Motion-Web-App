@@ -4,7 +4,6 @@ Future setParams(url, body) async {
   Response response = await post(url,
       headers: {"Content-Type": "application/json"},
       body: body);
-  print(response.body);
   return response.body;
 }
 

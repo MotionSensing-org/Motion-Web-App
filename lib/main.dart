@@ -767,11 +767,6 @@ class _IMUListState extends ConsumerState<IMUList> {
   ListView listus = ListView();
   @override
   Widget build(BuildContext context) {
-    print('\n\n');
-    for (var element in widget.addedIMUs) {
-      print(element.imuMac);
-    }
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
