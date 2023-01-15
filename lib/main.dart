@@ -628,79 +628,85 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.all(Radius.circular(20)),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                            child: Container(
-                                decoration: BoxDecoration(
-                                    color: Theme.of(context).cardColor,
-                                    borderRadius: const BorderRadius.all(Radius.circular(10))
-                                ),
-                                child: Center(
-                                  child: ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    shrinkWrap: true,
-                                    itemCount: imus.length,
-                                    itemBuilder: (context, index) {
-                                    return Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: GestureDetector(
-                                        child: Tooltip(
-                                          message: imus[index],
-                                          child: AnimatedContainer(
-                                            duration:  const Duration(milliseconds: 500),
-                                            decoration: BoxDecoration(
-                                                color: (chosenIMUIndex == index) ? Colors.white : Colors.white.withOpacity(0.5),
-                                                borderRadius: const BorderRadius.all(Radius.circular(20))
-                                            ),
-                                            child: Center(
-                                              child: Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  const Flexible(
-                                                    fit: FlexFit.loose,
-                                                    child: FittedBox(
-                                                      fit: BoxFit.scaleDown,
-                                                      child: Icon(
-                                                        Icons.sensors,
-                                                        color: _connectedIMUColor,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Flexible(
-                                                    fit: FlexFit.loose,
-                                                    child: Visibility(
-                                                      visible: MediaQuery.of(context).size.width > narrowWidth ? true : false,
-                                                      child: Padding(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        Flexible(
+                          fit: FlexFit.loose,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.all(Radius.circular(20)),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                  decoration: BoxDecoration(
+                                      color: Theme.of(context).cardColor,
+                                      borderRadius: const BorderRadius.all(Radius.circular(10))
+                                  ),
+                                  child: Center(
+                                    child: ScrollConfiguration(
+                                      behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
+                                        PointerDeviceKind.touch,
+                                        PointerDeviceKind.mouse,
+                                      },),
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        shrinkWrap: true,
+                                        itemCount: imus.length,
+                                        itemBuilder: (context, index) {
+                                        return Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: GestureDetector(
+                                            child: Tooltip(
+                                              message: imus[index],
+                                              child: AnimatedContainer(
+                                                duration:  const Duration(milliseconds: 500),
+                                                decoration: BoxDecoration(
+                                                    color: (chosenIMUIndex == index) ? Colors.white : Colors.white.withOpacity(0.5),
+                                                    borderRadius: const BorderRadius.all(Radius.circular(20))
+                                                ),
+                                                child: Center(
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      const Flexible(
+                                                        fit: FlexFit.loose,
                                                         child: FittedBox(
                                                           fit: BoxFit.scaleDown,
-                                                          child: Text(
-                                                            imus[index].toString().substring(12),
-                                                            style: const TextStyle(
-                                                              color: Colors.grey,
-                                                            ),
+                                                          child: Icon(
+                                                            Icons.sensors,
+                                                            color: _connectedIMUColor,
                                                           ),
                                                         ),
                                                       ),
-                                                    ),
-                                                  )
-                                                ],
+                                                      Flexible(
+                                                        fit: FlexFit.loose,
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                          child: FittedBox(
+                                                            fit: BoxFit.scaleDown,
+                                                            child: Text(
+                                                              imus[index].toString().substring(12),
+                                                              style: const TextStyle(
+                                                                color: Colors.grey,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      )
+                                                    ],
+                                                  ),
+                                                ),
                                               ),
                                             ),
+                                            onTap: () {
+                                              setState(() {
+                                                chosenIMUIndex = index;
+                                              });
+                                            }
                                           ),
-                                        ),
-                                        onTap: () {
-                                          setState(() {
-                                            chosenIMUIndex = index;
-                                          });
-                                        }
-                                      ),
-                                    );
-                                  }),
-                                )
+                                        );
+                                      }),
+                                    ),
+                                  )
+                              ),
                             ),
                           ),
                         ),

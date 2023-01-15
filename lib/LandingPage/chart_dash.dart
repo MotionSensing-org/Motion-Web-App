@@ -12,7 +12,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'package:csv/csv.dart';
 
-const narrowWidth = 680;
+const narrowWidth = 800;
 
 class TextFieldClass{
   TextEditingController controller = TextEditingController();
@@ -396,7 +396,7 @@ class _DataChart extends ConsumerState<DataChart> {
             color: Colors.black
           )
       ),
-      legend: Legend(isVisible: true),
+      legend: Legend(isVisible: true,),
       zoomPanBehavior: _zoomPanBehavior,
       // tooltipBehavior: _tooltipBehavior,
       series: series,
@@ -461,9 +461,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
                 shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: FractionallySizedBox(
-                      widthFactor: 0.9,
-                      heightFactor: 0.9,
+                  child: LimitedBox(
                       child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key))),
                 ),
               ),
@@ -475,28 +473,34 @@ class _ChartDash extends ConsumerState<ChartDash> {
 
     return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
       var size = min(constraints.maxWidth, constraints.maxHeight);
-      return ListView.builder(
-          shrinkWrap: true,
-          scrollDirection: Axis.vertical,
-          itemCount: types.length,
-          itemBuilder: (BuildContext context, int index) {
-            return Container(
-              width: size,
-              height: size,
-              child: Card(
-                color: Colors.white,
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    children: [
-                      Expanded(child: DataChart(imu: widget.imu, dataType: types[index], key: ValueKey(_key))),
-                    ],
+      return ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+        },),
+        child: ListView.builder(
+            shrinkWrap: true,
+            scrollDirection: Axis.vertical,
+            itemCount: types.length,
+            itemBuilder: (BuildContext context, int index) {
+              return Container(
+                width: size,
+                height: size,
+                child: Card(
+                  color: Colors.white,
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                        Expanded(child: DataChart(imu: widget.imu, dataType: types[index], key: ValueKey(_key))),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          }
+              );
+            }
+        ),
       );
     });
 
