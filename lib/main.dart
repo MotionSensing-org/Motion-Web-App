@@ -14,6 +14,19 @@ void main() {
   runApp(ProviderScope(child: MyApp()));
 }
 
+class CustomRoute extends MaterialPageRoute {
+  CustomRoute({ required WidgetBuilder builder, required RouteSettings settings })
+      : super(builder: builder, settings: settings);
+
+  @override
+  Widget buildTransitions(BuildContext context,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+      Widget child) {
+    return child;
+  }
+}
+
 class MyApp extends ConsumerWidget {
   MyApp({super.key});
   Map routes = {};
@@ -22,17 +35,17 @@ class MyApp extends ConsumerWidget {
   List imus = [];
   Route<dynamic> generateRoute(RouteSettings settings) {
     if(settings.name == 'home') {
-      return MaterialPageRoute(
+      return CustomRoute(
           settings: RouteSettings(name: settings.name),
           builder: (context) => ProviderScope(child: MyHomePage(properties: properties, addedIMUs: addedIMUs,))
       );
     } else if(settings.name == 'chart_dash_route') {
-      return MaterialPageRoute(
+      return CustomRoute(
           settings: RouteSettings(name: settings.name),
           builder: (context) => ProviderScope(child: ChartDashRoute(properties: properties))
       );
     }
-    return MaterialPageRoute( //name='imus_route'
+    return CustomRoute( //name='imus_route'
         settings: RouteSettings(name: settings.name),
         builder: (context) => ProviderScope(child: Builder(
             builder: (context) {
