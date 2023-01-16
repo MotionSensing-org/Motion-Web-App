@@ -31,6 +31,7 @@ class _IMUListState extends ConsumerState<IMUList> {
           padding: const EdgeInsets.all(8.0),
           child: FloatingActionButton(
             heroTag: 'Add ${widget.isFeedbackList ? 'feedback' : 'IMU'}',
+            backgroundColor: Colors.black.withOpacity(0.4),
             onPressed: () {
               setState(() {
                 if(!widget.isFeedbackList) {
@@ -160,8 +161,9 @@ class _IMUsRoute extends ConsumerState<IMUsRoute> {
                           ref.read(requestAnswerProvider).startStopDataCollection();
                           var connectedIMUs = jsonDecode(snapshot.data)['connection_state'];
                           ref.read(requestAnswerProvider).imus = connectedIMUs['imus'];
+                          ref.read(imusListProvider).imus = connectedIMUs['imus'];
                           ref.read(requestAnswerProvider).shouldInitBuffers = true;
-                          ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
+                          // ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
 
                           return ClipRRect(
                             borderRadius: const BorderRadius.all(Radius.circular(10)),

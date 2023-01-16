@@ -476,6 +476,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
   int chosenIMUIndex = 0;
   static const Color _connectedIMUColor = Colors.green;
   late final AnimationController _playPauseAnimationController;
+  List<double> controlButtonSizes = [60, 60, 60];
 
   @override
   void initState() {
@@ -487,7 +488,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
   Widget build(BuildContext context) {
     List<Widget> displayItems = [];
     List<Widget> algParams = [];
-    List imus = ref.watch(requestAnswerProvider).imus;
+    List imus = ref.watch(imusListProvider).imus;
     bool isShort = ref.watch(shortTallProvider).isShort(context);
     bool isNarrow = ref.watch(shortTallProvider).isNarrow(context);
 
@@ -682,13 +683,37 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
           padding: const EdgeInsets.all(4.0),
           child: Builder(
               builder: (context) {
-                return FloatingActionButton(
-                  heroTag: 'Options',
-                  onPressed: () {
-                    Scaffold.of(context).openDrawer();
-                  },
-                  tooltip: 'Options',
-                  child: const Icon(Icons.settings),
+                return Tooltip(
+                  message: 'Imu status',
+                  child: ClipOval(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: AnimatedContainer(
+                        onEnd: (){
+                          setState(() {
+                            controlButtonSizes[0] = 60;
+                          });
+                        },
+                        alignment: Alignment.center,
+                        width: controlButtonSizes[0],
+                        height: controlButtonSizes[0],
+                        duration:  const Duration(milliseconds: 100),
+                          color: Colors.black.withOpacity(0.4),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  controlButtonSizes[0] += 10;
+                                });
+                                Scaffold.of(context).openDrawer();
+                              },
+                              icon: const Icon(Icons.settings, color: Colors.white,)
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               }
           ),
@@ -698,34 +723,81 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
         fit: FlexFit.loose,
         child: Padding(
           padding: const EdgeInsets.all(4.0),
-          child: FloatingActionButton(
-            heroTag: 'Imu status',
-            onPressed: () {
-
-            },
-            tooltip: 'Imu status',
-            child: const Icon(Icons.notifications),
-          ),
+          child: Center(
+            child: ClipOval(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: AnimatedContainer(
+                  onEnd: (){
+                    setState(() {
+                      controlButtonSizes[1] = 60;
+                    });
+                  },
+                  alignment: Alignment.center,
+                  width: controlButtonSizes[1],
+                  height: controlButtonSizes[1],
+                  duration:  const Duration(milliseconds: 100),
+                  color: Colors.black.withOpacity(0.4),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: IconButton(
+                      icon: const Icon(Icons.notifications, color: Colors.white,),
+                      onPressed: () {
+                        setState(() {
+                          controlButtonSizes[1] += 10;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          )
         ),
       ),
       Flexible(
         fit: FlexFit.loose,
         child: Padding(
           padding: const EdgeInsets.all(4.0),
-          child: FloatingActionButton(
-            heroTag: 'Play/Pause',
-            onPressed: () {
-              ref.read(playPauseProvider).playPause();
-              if(ref.read(playPauseProvider).pause) {
-                _playPauseAnimationController.forward();
-              } else {
-                _playPauseAnimationController.reverse();
-              }
-            },
-            tooltip: 'Play/Pause',
-            child: AnimatedIcon(icon: AnimatedIcons.pause_play, progress: _playPauseAnimationController),
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: AnimatedContainer(
+                onEnd: (){
+                  setState(() {
+                    controlButtonSizes[2] = 60;
+                  });
+                },
+                alignment: Alignment.center,
+                width: controlButtonSizes[2],
+                height: controlButtonSizes[2],
+                duration:  const Duration(milliseconds: 100),
+                color: Colors.black.withOpacity(0.4),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: IconButton(
+                      icon: AnimatedIcon(
+                      color: Colors.white,
+                      icon: AnimatedIcons.pause_play,
+                      progress: _playPauseAnimationController
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          controlButtonSizes[2] += 10;
+                        });
+                        ref.read(playPauseProvider).playPause();
+                        if(ref.read(playPauseProvider).pause) {
+                          _playPauseAnimationController.forward();
+                        } else {
+                          _playPauseAnimationController.reverse();
+                        }
+                      },
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
+        )
       )
     ];
 
@@ -775,7 +847,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
             fit: FlexFit.loose,
             flex: 2,
             child: Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(4.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -784,7 +856,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                   Flexible(
                      fit: FlexFit.loose,
                       child: Padding(
-                        padding: const EdgeInsets.all(4.0),
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: controlButtonList,
@@ -831,10 +903,13 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
             left: 0,
             child: Visibility(
               visible: !isShort && !isNarrow,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: controlButtonList,
-               )
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: controlButtonList,
+                 ),
+              )
             ),
           )
         ],
@@ -857,6 +932,8 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
   int animatedStackIndex = 0;
   List<Widget> animatedStackChildren = [];
   bool canContinue = true;
+  double forwardSize = 60;
+  double backwardSize = 60;
 
   @override
   Widget build(BuildContext context) {
@@ -946,100 +1023,114 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 500),
-                          decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: animatedStackIndex == 0
-                                  ? Colors.grey.shade100.withOpacity(0.1)
-                                  : Theme.of(context).cardColor
-                          ),
-                          child: IconButton(
-                              onPressed: () => setState(() {
-                                if(animatedStackIndex > 0) {
-                                  animatedStackIndex -= 1;
-                                  return;
-                                }
-                              }),
-                              icon: const Icon(
-                                  Icons.arrow_back,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                        blurRadius: 5,
-                                        color: Colors.grey
-                                    )
-                                  ]
-                              )
+                        child: ClipOval(
+                          child: AnimatedContainer(
+                            width: backwardSize,
+                            height: backwardSize,
+                            onEnd: () {
+                              setState(() {
+                                backwardSize = 60;
+                              });
+                            },
+                            duration: const Duration(milliseconds: 200),
+                            color: animatedStackIndex == 0
+                                ? Colors.grey.shade100.withOpacity(0.1)
+                                : Theme.of(context).cardColor,
+                            child: IconButton(
+                                onPressed: () => setState(() {
+                                  backwardSize = 70;
+                                  if(animatedStackIndex > 0) {
+                                    animatedStackIndex -= 1;
+                                    return;
+                                  }
+                                }),
+                                icon: const Icon(
+                                    Icons.arrow_back,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                          blurRadius: 5,
+                                          color: Colors.grey
+                                      )
+                                    ]
+                                )
+                            ),
                           ),
                         ),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 500),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
+                        child: ClipOval(
+                          child: AnimatedContainer(
+                            width: forwardSize,
+                            height: forwardSize,
+                            duration: const Duration(milliseconds: 200),
+                            onEnd: (){
+                              setState(() {
+                                forwardSize = 60;
+                              });
+                            },
                             color: canContinue
                                 ? Theme.of(context).cardColor
-                                : Colors.grey.shade100.withOpacity(0.1)
-                          ),
-                          child: IconButton(
-                              onPressed: () => setState(() {
-                                if(!canContinue && animatedStackIndex == 1) {
-                                  showDialog(
-                                      context: context,
-                                      builder: (context) => BackdropFilter(
+                                : Colors.grey.shade100.withOpacity(0.1),
+                            child: IconButton(
+                                onPressed: () => setState(() {
+                                  forwardSize = 70;
+                                  if(!canContinue && animatedStackIndex == 1) {
+                                    showDialog(
+                                        context: context,
+                                        builder: (context) => BackdropFilter(
+                                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                            child: AlertDialog(
+                                              content: Text(
+                                                'IMU list cannot be empty',
+                                                style: Theme.of(context).textTheme.bodyText1,
+                                              ),
+                                            )
+                                        )
+                                    );
+                                    return;
+                                  } else if(animatedStackIndex == 1) {
+                                    animatedStackIndex += 1;
+                                    Navigator.of(context).pushNamed('imus_route');
+                                    return;
+                                  } else if(!canContinue && animatedStackIndex == 2) {
+                                    showDialog(
+                                        context: context,
+                                        builder: (context) => BackdropFilter(
                                           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                          child: AlertDialog(
-                                            content: Text(
-                                              'IMU list cannot be empty',
-                                              style: Theme.of(context).textTheme.bodyText1,
-                                            ),
-                                          )
-                                      )
-                                  );
-                                  return;
-                                } else if(animatedStackIndex == 1) {
-                                  animatedStackIndex += 1;
-                                  Navigator.of(context).pushNamed('imus_route');
-                                  return;
-                                } else if(!canContinue && animatedStackIndex == 2) {
-                                  showDialog(
-                                      context: context,
-                                      builder: (context) => BackdropFilter(
-                                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                          child: AlertDialog(
-                                            content: Text(
-                                              'Please select an algorithm to continue',
-                                              style: Theme.of(context).textTheme.bodyText1,
-                                            ),
-                                          )
-                                      )
-                                  );
-                                  return;
-                                } else if(animatedStackIndex < animatedStackChildren.length - 1) {
-                                  animatedStackIndex += 1;
-                                  return;
-                                }
+                                            child: AlertDialog(
+                                              content: Text(
+                                                'Please select an algorithm to continue',
+                                                style: Theme.of(context).textTheme.bodyText1,
+                                              ),
+                                            )
+                                        )
+                                    );
+                                    return;
+                                  } else if(animatedStackIndex < animatedStackChildren.length - 1) {
+                                    animatedStackIndex += 1;
+                                    return;
+                                  }
 
-                                ref.read(requestAnswerProvider).startStopDataCollection();
-                                ref.read(requestAnswerProvider).setQuery('set_params');
-                                ref.read(requestAnswerProvider).setParamsMap(widget.properties);
-                                ref.read(requestAnswerProvider).filename = widget.properties['output_file'];
-                                ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
-                                Navigator.of(context).pushNamed('chart_dash_route');
-                              }),
-                              icon: const Icon(
-                                  Icons.arrow_forward,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                        blurRadius: 5,
-                                        color: Colors.grey
-                                    )
-                                  ]
-                              )
+                                  ref.read(requestAnswerProvider).startStopDataCollection();
+                                  ref.read(requestAnswerProvider).setQuery('set_params');
+                                  ref.read(requestAnswerProvider).setParamsMap(widget.properties);
+                                  ref.read(requestAnswerProvider).filename = widget.properties['output_file'];
+                                  ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
+                                  Navigator.of(context).pushNamed('chart_dash_route');
+                                }),
+                                icon: const Icon(
+                                    Icons.arrow_forward,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                          blurRadius: 5,
+                                          color: Colors.grey
+                                      )
+                                    ]
+                                )
+                            ),
                           ),
                         ),
                       ),

@@ -1,8 +1,4 @@
 import 'dart:io';
-import 'dart:math';
-import 'dart:ui';
-
-import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -14,7 +10,7 @@ import 'dart:collection';
 import 'package:csv/csv.dart';
 
 const narrowWidth = 650;
-const shortHeight = 700;
+const shortHeight = 650;
 
 
 class TextFieldClass{
@@ -84,13 +80,14 @@ class RequestHandler extends ChangeNotifier {
     return true;
   }
 
-  Future<bool> getImus() async {
-    query = '?request_type=get_imus';
-    Map data = await getDecodedData();
-    imus = data['imus'];
-
-    return true;
-  }
+  // Future<bool> getImus() async {
+  //   query = '?request_type=get_imus';
+  //   Map data = await getDecodedData();
+  //   imus = data['imus'];
+  //   ref.read(imusListProvider).imus = imus;
+  //
+  //   return true;
+  // }
 
   Future<bool> getAlgParams() async {
     query = '?request_type=get_params';
@@ -203,8 +200,6 @@ class RequestHandler extends ChangeNotifier {
       return;
     }
 
-
-
     query = '?request_type=$curAlg';
 
     var data = await getData(Uri.parse(url + query));
@@ -276,7 +271,6 @@ class RequestHandler extends ChangeNotifier {
     //   String csv = const ListToCsvConverter().convert([[row]]);
     //   outputFile?.writeAsString('$csv\n', mode: FileMode.append);
     // }
-
     notifyListeners();
   }
 
@@ -289,6 +283,15 @@ class RequestHandler extends ChangeNotifier {
     var body = json.encode(addedIMUSStrings);
     // var body = json.encode({'imus': ['8889989'], 'feedbacks': []});
     return await setParams(Uri.parse('$url?request_type=set_imus'), body);
+  }
+}
+
+class IMUsListProvider extends ChangeNotifier {
+  List imus = [];
+
+  void updateList(List imus) {
+    this.imus = imus;
+    notifyListeners();
   }
 }
 
@@ -332,6 +335,10 @@ class ShortTall extends ChangeNotifier {
     return MediaQuery.of(context).size.width <= narrowWidth;
   }
 }
+
+final imusListProvider = ChangeNotifierProvider((ref) {
+  return IMUsListProvider();
+});
 
 final shortTallProvider = ChangeNotifierProvider((ref) {
   return ShortTall();
