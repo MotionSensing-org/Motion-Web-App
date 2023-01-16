@@ -260,6 +260,7 @@ class RequestHandler extends ChangeNotifier {
             row.clear();
             outputFile?.writeAsString('$csv\n');
           } catch (e) {
+
           }
         }
       } else {
@@ -416,7 +417,7 @@ class ChartDash extends ConsumerStatefulWidget{
 
 class _ChartDash extends ConsumerState<ChartDash> {
   DataChart? mainChart;
-  int _key = 1;
+  final int _key = 1;
   Color highlightedBorder = Colors.lightBlueAccent.shade100;
   late List algorithms;
   String? dropdownValue='';
@@ -478,12 +479,12 @@ class _ChartDash extends ConsumerState<ChartDash> {
           PointerDeviceKind.touch,
           PointerDeviceKind.mouse,
         },),
-        child: ListView.builder(
+        child:  ListView.builder(
             shrinkWrap: true,
             scrollDirection: Axis.vertical,
             itemCount: types.length,
             itemBuilder: (BuildContext context, int index) {
-              return Container(
+              return SizedBox(
                 width: size,
                 height: size,
                 child: Card(

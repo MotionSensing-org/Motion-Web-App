@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'dart:ui';
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -9,7 +7,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'chart_dash.dart';
 
 
-
+//ignore: must_be_immutable
 class IMUList extends ConsumerStatefulWidget {
   IMUList({Key? key, required this.addedIMUs, this.isFeedbackList=false}) : super(key: key);
   List<TextFieldClass> addedIMUs;
@@ -35,7 +33,10 @@ class _IMUListState extends ConsumerState<IMUList> {
             heroTag: 'Add ${widget.isFeedbackList ? 'feedback' : 'IMU'}',
             onPressed: () {
               setState(() {
-                ref.read(imusCounter).inc();
+                if(!widget.isFeedbackList) {
+                  ref.read(imusCounter).inc();
+                }
+
                 widget.addedIMUs.add(TextFieldClass(
                   controller: TextEditingController(),
                 ));
@@ -55,7 +56,10 @@ class _IMUListState extends ConsumerState<IMUList> {
                   startActionPane: ActionPane(
                       dismissible: DismissiblePane(onDismissed: () {
                         setState(() {
-                          ref.read(imusCounter).dec();
+                          if(!widget.isFeedbackList) {
+                            ref.read(imusCounter).dec();
+                          }
+
                           widget.addedIMUs.removeAt(index);
                         });
                       }),
@@ -64,7 +68,10 @@ class _IMUListState extends ConsumerState<IMUList> {
                         SlidableAction(
                           onPressed: (BuildContext context) {
                             setState(() {
-                              ref.read(imusCounter).dec();
+                              if(!widget.isFeedbackList) {
+                                ref.read(imusCounter).dec();
+                              }
+
                               widget.addedIMUs.removeAt(index);
                             });
                           },
@@ -99,6 +106,7 @@ class _IMUListState extends ConsumerState<IMUList> {
   }
 }
 
+//ignore: must_be_immutable
 class IMUsRoute extends ConsumerStatefulWidget{
   IMUsRoute({super.key, required this.addedIMUs, required this.properties});
   Map<String, List<TextFieldClass>> addedIMUs = {'imus': [], 'feedbacks': []};
@@ -206,23 +214,24 @@ class _IMUsRoute extends ConsumerState<IMUsRoute> {
                               ),
                             ),
                           );
-                      }
-                      return ClipRRect(
-                        borderRadius: const BorderRadius.all(Radius.circular(10)),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                              decoration: BoxDecoration(
-                                  color: Theme.of(context).cardColor,
-                                  borderRadius: const BorderRadius.all(Radius.circular(10))
+                        default: //waiting for completion
+                          return ClipRRect(
+                            borderRadius: const BorderRadius.all(Radius.circular(10)),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                  decoration: BoxDecoration(
+                                      color: Theme.of(context).cardColor,
+                                      borderRadius: const BorderRadius.all(Radius.circular(10))
+                                  ),
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: CircularProgressIndicator(),
+                                  )
                               ),
-                              child: const Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: CircularProgressIndicator(),
-                              )
-                          ),
-                        ),
-                      );
+                            ),
+                          );
+                      }
                     }
                 );
               }

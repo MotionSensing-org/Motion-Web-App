@@ -1,12 +1,8 @@
-import 'dart:convert';
-import 'dart:math';
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:iot_project/LandingPage/chart_dash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import 'LandingPage/imus_route.dart';
 
 
@@ -27,6 +23,7 @@ class CustomRoute extends MaterialPageRoute {
   }
 }
 
+//ignore: must_be_immutable
 class MyApp extends ConsumerWidget {
   MyApp({super.key});
   Map routes = {};
@@ -111,6 +108,7 @@ class MyApp extends ConsumerWidget {
   }
 }
 
+//ignore: must_be_immutable
 class AlgParams extends ConsumerStatefulWidget{
   Map properties;
   AlgParams({super.key, required this.properties});
@@ -302,6 +300,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
   }
 }
 
+//ignore: must_be_immutable
 class DashControl extends ConsumerStatefulWidget{
   Map properties;
   DashControl({super.key, required this.properties});
@@ -346,7 +345,7 @@ class _DashControl extends ConsumerState<DashControl> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(8.0),
                   child: Text(
                       'Please choose an algorithm:',
                     style: Theme.of(context).textTheme.bodyText1,
@@ -403,7 +402,6 @@ class _DashControl extends ConsumerState<DashControl> {
   }
 }
 
-
 class AnimatedIndexedStack extends StatefulWidget {
   final int index;
   final List<Widget> children;
@@ -419,7 +417,8 @@ class AnimatedIndexedStack extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _AnimatedIndexedStackState createState() => _AnimatedIndexedStackState();
+
+  State<AnimatedIndexedStack> createState() => _AnimatedIndexedStackState();
 }
 
 class _AnimatedIndexedStackState extends State<AnimatedIndexedStack>
@@ -460,7 +459,7 @@ class _AnimatedIndexedStackState extends State<AnimatedIndexedStack>
   }
 }
 
-
+//ignore: must_be_immutable
 class ChartDashRoute extends ConsumerStatefulWidget{
   Map properties;
   ChartDashRoute({Key? key, required this.properties}) : super(key: key);
@@ -590,7 +589,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                       child: Container(
                           decoration: BoxDecoration(
                               color: Theme.of(context).cardColor,
-                              borderRadius: const BorderRadius.all(Radius.circular(10))
+                              borderRadius: const BorderRadius.all(Radius.circular(20))
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
@@ -782,6 +781,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
   }
 }
 
+//ignore: must_be_immutable
 class MyHomePage extends ConsumerStatefulWidget{
   Map properties;
   Map<String, List<TextFieldClass>> addedIMUs;
