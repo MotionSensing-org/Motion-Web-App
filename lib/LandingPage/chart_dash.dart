@@ -109,6 +109,7 @@ class RequestHandler extends ChangeNotifier {
     query = '?request_type=get_data_types';
     Map data = await getDecodedData();
     dataTypes = data['data_types'];
+    ref.read(dataTypesProvider).updateDict(dataTypes);
 
     return true;
   }
@@ -295,6 +296,15 @@ class IMUsListProvider extends ChangeNotifier {
   }
 }
 
+class DataTypes extends ChangeNotifier {
+  Map types = {};
+
+  void updateDict(Map types) {
+    this.types = types;
+    notifyListeners();
+  }
+}
+
 class PlayPause extends ChangeNotifier {
   bool pause = false;
 
@@ -335,6 +345,10 @@ class ShortTall extends ChangeNotifier {
     return MediaQuery.of(context).size.width <= narrowWidth;
   }
 }
+
+final dataTypesProvider = ChangeNotifierProvider((ref) {
+  return DataTypes();
+});
 
 final imusListProvider = ChangeNotifierProvider((ref) {
   return IMUsListProvider();
@@ -546,7 +560,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
 
   @override
   Widget build(BuildContext context) {
-    dataTypes = ref.watch(requestAnswerProvider).dataTypes;
+    dataTypes = ref.watch(dataTypesProvider).types;
     if(types.isEmpty && dataTypes.isNotEmpty) {
       types = dataTypes.keys.toList();
       tapped = List.generate(types.length, (index) => false);
