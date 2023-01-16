@@ -394,7 +394,7 @@ class _DataChart extends ConsumerState<DataChart> {
 
   @override
   Widget build(BuildContext context) {
-    dataTypes = ref.watch(requestAnswerProvider).dataTypes;
+    dataTypes = ref.watch(dataTypesProvider).types;
     var rawDataSource = ref.watch(requestAnswerProvider).provideRawData(widget.imu);
     List<ChartSeries<dynamic, dynamic>> series = [];
     for(var subType in dataTypes[widget.dataType]) {
@@ -407,28 +407,6 @@ class _DataChart extends ConsumerState<DataChart> {
               xValueMapper: (dynamic rD, _) => rD.timeStep,
               yValueMapper: (dynamic rD, _) => rD.value
           )
-      );
-    }
-
-    if(widget.isMainChart) {
-      return Card(
-        // elevation: 20,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-        color: widget.mainChartColor,
-        child: SfCartesianChart(
-          title: ChartTitle(
-              text: widget.dataType
-          ),
-          legend: Legend(
-              isVisible: true,
-              position: LegendPosition.bottom
-          ),
-          zoomPanBehavior: _zoomPanBehavior,
-          // tooltipBehavior: _tooltipBehavior,
-          series: series,
-          primaryXAxis:
-          NumericAxis(edgeLabelPlacement: EdgeLabelPlacement.shift),
-        ),
       );
     }
 
@@ -493,7 +471,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
           left: chartLeft,
           // right: tapped[i] ? 0 : ((tapped.length - i - 1) * width / tapped.length),
           width: tapped[i] ? width : chartWidth,
-          duration: const Duration(milliseconds: 900),
+          duration: const Duration(milliseconds: 700),
           curve: Curves.fastOutSlowIn,
           child: GestureDetector(
             onTap: () {
