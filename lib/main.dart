@@ -1,17 +1,61 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:iot_project/LandingPage/chart_dash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
+import 'LandingPage/imus_route.dart';
+
 
 void main() {
-  runApp(const MyApp());
+  runApp(ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class CustomRoute extends MaterialPageRoute {
+  CustomRoute({ required WidgetBuilder builder, required RouteSettings settings })
+      : super(builder: builder, settings: settings);
 
+  @override
+  Widget buildTransitions(BuildContext context,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+      Widget child) {
+    return child;
+  }
+}
+
+//ignore: must_be_immutable
+class MyApp extends ConsumerWidget {
+  MyApp({super.key});
+  Map routes = {};
+  Map properties = {};
+  Map<String, List<TextFieldClass>> addedIMUs = {'imus': [], 'feedbacks': []};
+  List imus = [];
+  Route<dynamic> generateRoute(RouteSettings settings) {
+    if(settings.name == 'home') {
+      return CustomRoute(
+          settings: RouteSettings(name: settings.name),
+          builder: (context) => ProviderScope(child: MyHomePage(properties: properties, addedIMUs: addedIMUs,))
+      );
+    } else if(settings.name == 'chart_dash_route') {
+      return CustomRoute(
+          settings: RouteSettings(name: settings.name),
+          builder: (context) => ProviderScope(child: ChartDashRoute(properties: properties))
+      );
+    }
+    return CustomRoute( //name='imus_route'
+        settings: RouteSettings(name: settings.name),
+        builder: (context) => ProviderScope(child: Builder(
+            builder: (context) {
+              return IMUsRoute(addedIMUs: addedIMUs, properties: properties,);
+            }
+        ))
+    );
+  }
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+
+
     return MaterialApp(
       title: 'Motion Sensing',
       theme: ThemeData(
@@ -24,14 +68,47 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.green,
-        fontFamily: "Arial"
+        // primarySwatch: Colors.green,
+        expansionTileTheme: ExpansionTileThemeData(
+          iconColor: Colors.blue.shade700,
+          collapsedIconColor: Colors.white,
+          collapsedTextColor: Colors.white,
+          textColor: Colors.blue.shade700,
+        ),
+        textTheme: const TextTheme(
+          bodyText1: TextStyle(
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                    blurRadius: 5,
+                    color: Colors.grey
+                )
+              ]
+          ),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.blue
+        ),
+        drawerTheme: DrawerThemeData(
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+          backgroundColor: Colors.grey.shade100.withOpacity(0.4)
+        ),
+        fontFamily: "Arial",
+        scaffoldBackgroundColor: Colors.white,
+        cardColor: Colors.grey.shade100.withOpacity(0.4),
+        dialogBackgroundColor: Colors.grey.shade100.withOpacity(0.4),
+        cardTheme: const CardTheme(
+          elevation: 0
+        )
       ),
-      home: ProviderScope(child: MyHomePage()),
+      home: ProviderScope(child: MyHomePage(properties: properties, addedIMUs: addedIMUs,)),
+      initialRoute: 'home',
+      onGenerateRoute: generateRoute,
     );
   }
 }
 
+//ignore: must_be_immutable
 class AlgParams extends ConsumerStatefulWidget{
   Map properties;
   AlgParams({super.key, required this.properties});
@@ -42,11 +119,95 @@ class AlgParams extends ConsumerStatefulWidget{
 
 class _AlgParams extends ConsumerState<AlgParams>{
   String? dropdownValue = '';
+  Map imuDashboards = {};
+  String outputFileForDisplay = '';
+
   @override
   Widget build(BuildContext context) {
     List curAlgParams = ref.watch(requestAnswerProvider).curAlgParams;
     String currentAlgorithm = ref.watch(chosenAlgorithmProvider).chosenAlg;
     List<Widget> params = [];
+
+    params.add(
+        Text(
+          outputFileForDisplay.split('\\').last,
+          style: Theme.of(context).textTheme.bodyText1,
+        )
+    );
+    params.add(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              fit: FlexFit.loose,
+              child: Card(
+                color: Colors.white,
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                elevation: Theme.of(context).cardTheme.elevation,
+                child: TextButton(
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Select output file',
+                      style: TextStyle(
+                          color: Colors.grey
+                      ),
+                    ),
+                  ),
+                  onPressed: () async {
+                    final DateTime now = DateTime.now();
+                    String? outputFile = await FilePicker.platform.saveFile(
+                        dialogTitle: 'Please select an output file:',
+                        fileName: '${now.year}-${now.month}-${now.day}--${now.hour}-${now.minute}-${now.second}',
+                        allowedExtensions: ['csv'],
+                        type: FileType.custom
+                    );
+
+                    if (outputFile != null) {
+                      if(!outputFile.contains('.csv')) {
+                        outputFile += '.csv';
+                      }
+                    } //User cancelled the file picker
+
+                    widget.properties['output_file'] = outputFile;
+                    setState(() {
+                      if(widget.properties['output_file'] != null){
+                        outputFileForDisplay = widget.properties['output_file'];
+                      }
+                    });
+                  },
+                ),
+              ),
+            ),
+            Flexible(
+              fit: FlexFit.loose,
+              child: Card(
+                color: Colors.white,
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                elevation: Theme.of(context).cardTheme.elevation,
+                child: TextButton(
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Clear',
+                      style: TextStyle(
+                          color: Colors.grey
+                      ),
+                    ),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      widget.properties['output_file'] = null;
+                      outputFileForDisplay = '';
+                    });
+                  },
+                ),
+              ),
+            ),
+          ],
+        )
+    );
 
     if(currentAlgorithm != '') {
       for(int i = 0; i < curAlgParams.length ;i++){
@@ -55,26 +216,34 @@ class _AlgParams extends ConsumerState<AlgParams>{
             widget.properties[curAlgParams[i]['param_name']] = curAlgParams[i]['default_value'];
           }
 
-          params.add(Card(
-            color: Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
-            child: TextField(
-              onChanged: (value){
-                widget.properties[curAlgParams[i]['param_name']] = value;
-              },
-              decoration: InputDecoration(
-                labelText: curAlgParams[i]['param_name'],
-                border: const OutlineInputBorder(),
-                hintText: 'Enter a value',
+          params.add(FractionallySizedBox(
+            widthFactor: 0.6,
+            child: Tooltip(
+              message: curAlgParams[i]['param_name'],
+              child: Card(
+                color: Colors.white,
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
+                elevation: Theme.of(context).cardTheme.elevation,
+                child: TextField(
+                  textAlign: TextAlign.center,
+                  onChanged: (value){
+                    widget.properties[curAlgParams[i]['param_name']] = value;
+                  },
+                  decoration: InputDecoration(
+                    labelText: curAlgParams[i]['param_name'],
+                    border: const OutlineInputBorder(),
+                    hintText: 'Enter a value. default: ${curAlgParams[i]['default_value']}',
+                  ),
+                ),
               ),
             ),
           )
           );
         } else {
           if(curAlgParams[i]['type'] == 'CheckList') {
-            List vals = curAlgParams[i]['values'];
+            List values = curAlgParams[i]['values'];
             if(dropdownValue == '') {
-              dropdownValue = vals[curAlgParams[i]['default_value']];
+              dropdownValue = values[curAlgParams[i]['default_value']];
               widget.properties[curAlgParams[i]['param_name']] = dropdownValue;
             }
 
@@ -83,28 +252,30 @@ class _AlgParams extends ConsumerState<AlgParams>{
                 children: [
                   Text(
                     curAlgParams[i]['param_name'],
-                    style: const TextStyle(color: Colors.blue),
+                    style: Theme.of(context).textTheme.bodyText1,
                   ),
-                  Card(
-                    color: Colors.white,
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
                       child: DropdownButton(
-                          items: [for(int k = 0; k < vals.length; k++) DropdownMenuItem<String>(
-                            value: vals[k],
-                            child: Text(vals[k]),
+                          items: [for(int k = 0; k < values.length; k++) DropdownMenuItem<String>(
+                            value: values[k],
+                            child: Text(values[k]),
                           )],
+                          dropdownColor: Colors.grey.shade100.withOpacity(0.6),
                           icon: const Icon(
                             Icons.arrow_downward,
-                            color: Colors.blue,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                  blurRadius: 5,
+                                  color: Colors.grey
+                              )
+                            ]
                           ),
                           value: dropdownValue,
-                          underline: Container(
-                            color: Colors.blue,
-                            height: 3,
-                          ),
-                          style: const TextStyle(color: Colors.blue),
+                          style: Theme.of(context).textTheme.bodyText1,
                           onChanged: (String? value) {
                             setState(() {
                               dropdownValue = value;
@@ -122,31 +293,14 @@ class _AlgParams extends ConsumerState<AlgParams>{
       }
     }
 
-    params.add(
-        Card(
-          color: Colors.white,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-          child: TextButton(
-            child: const Text(
-              'Start',
-              style: TextStyle(
-                color: Colors.green
-              ),
-            ),
-            onPressed: () {
-              ref.read(requestAnswerProvider).setQuery('set_params');
-              ref.read(requestAnswerProvider).setParamsMap(widget.properties);
-              Navigator.push(context, MaterialPageRoute(builder: (context) => ProviderScope(child: ChartDashRoute(properties: widget.properties,))));
-            },
-          ),
-        )
-    );
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: params,
     );
   }
 }
 
+//ignore: must_be_immutable
 class DashControl extends ConsumerStatefulWidget{
   Map properties;
   DashControl({super.key, required this.properties});
@@ -159,117 +313,208 @@ class _DashControl extends ConsumerState<DashControl> {
   late List algorithms;
   String? dropdownValue='';
 
+
   @override
   Widget build(BuildContext context) {
     String chosenAlgorithm = ref.watch(chosenAlgorithmProvider).chosenAlg;
     algorithms = ref.watch(requestAnswerProvider).algorithms;
     List<DropdownMenuItem<String>> algorithmsList = [for(int i = 0; i < algorithms.length; i++) DropdownMenuItem<String>(
       value: algorithms[i],
-      child: Text(algorithms[i]),
+      child: Text(
+          algorithms[i],
+          style: Theme.of(context).textTheme.bodyText1,
+      ),
     )];
-    algorithmsList.add(const DropdownMenuItem<String>(
-      value: '',
-      child: Text(''),
-    ));
 
+    if(dropdownValue == '' && algorithms.isNotEmpty) {
+      dropdownValue = algorithms[0];
+    } 
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Card(
-            color: Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: DropdownButton(
-                  items: algorithmsList,
-                  icon: const Icon(
-                    Icons.arrow_downward,
-                    color: Colors.blue,
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.all(Radius.circular(10))
+      ),
+      child: FractionallySizedBox(
+        widthFactor: 0.6,
+        child: ListView(
+          shrinkWrap: true,
+          scrollDirection: Axis.vertical,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                      'Please choose an algorithm:',
+                    style: Theme.of(context).textTheme.bodyText1,
                   ),
-                  value: dropdownValue,
-                  underline: Container(
-                    color: Colors.blue,
-                    height: 3,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: DropdownButton(
+                          items: algorithmsList,
+                          dropdownColor: Colors.grey.shade100.withOpacity(0.6),
+                          icon: const Icon(
+                            Icons.arrow_downward,
+                            color: Colors.white,
+                              shadows: [
+                              Shadow(
+                                  blurRadius: 5,
+                                  color: Colors.grey
+                              )
+                            ]
+                          ),
+                          value: dropdownValue,
+                          style: Theme.of(context).textTheme.bodyText1,
+                          onChanged: (String? value) {
+                            setState(() {
+                              dropdownValue = value;
+                              widget.properties['alg_name'] = value;
+                              ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
+                            });
+                          }
+                      ),
+                    ),
                   ),
-                  style: const TextStyle(color: Colors.blue),
-                  onChanged: (String? value) {
-                    setState(() {
-                      dropdownValue = value;
-                      widget.properties['alg_name'] = value;
-                      ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
-                    });
-                  }
-              ),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Card(
-              color: Colors.lightBlueAccent.shade100,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-              child:  Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: AnimatedCrossFade(
+                ),
+                AnimatedCrossFade(
                     crossFadeState: chosenAlgorithm == '' ? CrossFadeState.showFirst
                         : CrossFadeState.showSecond,
                     duration: const Duration(milliseconds: 300),
                     firstChild: const SizedBox.shrink(),
-                    secondChild: AlgParams(properties: widget.properties,)
-                ),
-              )
-          ),
+                    secondChild: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: AlgParams(properties: widget.properties,),
+                    )
+                )
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
 
+class AnimatedIndexedStack extends StatefulWidget {
+  final int index;
+  final List<Widget> children;
+  final Duration duration;
 
-class ChartDashRoute extends ConsumerWidget {
-  Map properties;
-  List imus = [];
-  ChartDashRoute({Key? key, required this.properties}) : super(key: key);
-  Map chartDashboards = {};
-  String curImu = '';
+  const AnimatedIndexedStack({
+    Key? key,
+    required this.index,
+    required this.children,
+    this.duration = const Duration(
+      milliseconds: 800,
+    ),
+  }) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+
+  State<AnimatedIndexedStack> createState() => _AnimatedIndexedStackState();
+}
+
+class _AnimatedIndexedStackState extends State<AnimatedIndexedStack>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void didUpdateWidget(AnimatedIndexedStack oldWidget) {
+    if (widget.index != oldWidget.index) {
+      _controller.forward(from: 0.0);
+    }
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  void initState() {
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _controller.forward();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _controller,
+      child: IndexedStack(
+        alignment: Alignment.center,
+        index: widget.index,
+        children: widget.children,
+      ),
+    );
+  }
+}
+
+//ignore: must_be_immutable
+class ChartDashRoute extends ConsumerStatefulWidget{
+  Map properties;
+  ChartDashRoute({Key? key, required this.properties}) : super(key: key);
+
+  @override
+  ConsumerState<ChartDashRoute> createState() => _ChartDashRoute();
+}
+
+class _ChartDashRoute extends ConsumerState<ChartDashRoute>
+    with SingleTickerProviderStateMixin {
+  Color selectedImuColor = Colors.green;
+  Color notSelectedImuColor = Colors.grey;
+  Map chartDashboards = {};
+  int chosenIMUIndex = 0;
+  static const Color _connectedIMUColor = Colors.green;
+  late final AnimationController _playPauseAnimationController;
+
+  @override
+  void initState() {
+    _playPauseAnimationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     List<Widget> displayItems = [];
     List<Widget> algParams = [];
-    imus = ref.watch(requestAnswerProvider).imus;
-    for (var imu in imus) {
-      chartDashboards[imu] = ChartDash(imu: imu,);
-    }
+    List imus = ref.watch(requestAnswerProvider).imus;
 
-    if(curImu == '') {
-      curImu = imus[0];
-    }
-
-    properties.forEach((key, value) {
+    widget.properties.forEach((key, value) {
       if(key == 'alg_name') {
         algParams.add(Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
               value,
-            style: const TextStyle(
-              color: Colors.blue,
-              fontSize: 20
-            ),
+            style: Theme.of(context).textTheme.bodyText1,
           ),
         ));
-      } else {
+      } else if(key == 'output_file' && value != null) {
+        String nameWithoutPath = value.split('\\').last;
+        algParams.add(Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            'Output file:\n$nameWithoutPath',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyText1,
+          ),
+        ));
+        // ref.read(requestAnswerProvider).filename = value;
+      } else if(value != null) {
         algParams.add(Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
               '$key: $value',
-              style: const TextStyle(
-                  color: Colors.blue,
-                  // fontSize: 20
-              )
+              style: Theme.of(context).textTheme.bodyText1
           ),
         ));
       }
@@ -277,7 +522,8 @@ class ChartDashRoute extends ConsumerWidget {
 
     displayItems.addAll([
       Card(
-        color: Colors.white,
+        color: Colors.black.withOpacity(0.3),
+        elevation: Theme.of(context).cardTheme.elevation,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
         child: Column(
           children: algParams,
@@ -311,72 +557,249 @@ class ChartDashRoute extends ConsumerWidget {
     displayItems.addAll([
       Padding(
         padding: const EdgeInsets.all(8.0),
-        child: ElevatedButton(
-          onPressed: () {
-            ref.read(playPauseProvider).playPause();
-          },
-          style: ButtonStyle(
-            shape: MaterialStateProperty.all(const CircleBorder()),
-            padding: MaterialStateProperty.all(const EdgeInsets.all(20)),
-            // elevation: MaterialStateProperty.resolveWith<double?>((states) {
-            //   return 10; // <-- Splash color
-            // }),
-            backgroundColor: MaterialStateProperty.all(Colors.blue), // <-- Button color
-            overlayColor: MaterialStateProperty.resolveWith<Color?>((states) {
-              if (states.contains(MaterialState.pressed)) return Colors.lightBlueAccent; // <-- Splash color
-              return Colors.blue;
-            }),
-          ),
-          child: ref.watch(playPauseProvider).pause
-              ? const Icon(Icons.pause_outlined)
-              : const Icon(Icons.play_arrow),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.all(8.0),
         child: Card(
-          color: Colors.white,
+          color: Colors.red,
+          elevation: Theme.of(context).cardTheme.elevation,
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
           child: TextButton(
             child: const Text(
               'Stop',
               style: TextStyle(
-                  color: Colors.red
+                  color: Colors.white
               ),
             ),
             onPressed: () {
-              Navigator.pop(context);
+              ref.read(requestAnswerProvider).startStopDataCollection(stop: true);
+              widget.properties['output_file'] = null;
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
           ),
         ),
       )
     ]);
 
-    return Container(
-      color: Colors.lightBlue,
-      child: Row(
+    return Scaffold(
+      drawer: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Drawer(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: displayItems,
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: Stack(
         children: [
-          Expanded(
-              flex: 1,
-              child:  Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10),
-                child: Card(
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                  elevation: 10,
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: displayItems,
+          const Image(
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              image: AssetImage('assets/images/bg.png')
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Expanded(
+                  flex: 7,
+                  child: ClipRRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                          decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: const BorderRadius.all(Radius.circular(20))
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: AnimatedIndexedStack(
+                                duration: const Duration(milliseconds: 500),
+                                index: chosenIMUIndex,
+                                children: List.generate(imus.length, (index) {
+                                  return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
+                                    return Stack(
+                                        children: [
+                                          Positioned(
+                                            top: 0,
+                                            left: 3 * constraints.maxWidth / 8,
+                                            child: Icon(
+                                              Icons.show_chart,
+                                              color: Colors.white,
+                                              size: constraints.maxWidth / 4,
+                                            ),
+                                          ),
+                                          ChartDash(imu: imus[index],)
+                                        ]
+                                    );
+                                  });
+                                })
+                            ),
+                          )
+                      ),
                     ),
                   ),
                 ),
-              )
+                Flexible(
+                  flex: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          fit: FlexFit.loose,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.all(Radius.circular(20)),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                  decoration: BoxDecoration(
+                                      color: Theme.of(context).cardColor,
+                                      borderRadius: const BorderRadius.all(Radius.circular(10))
+                                  ),
+                                  child: Center(
+                                    child: ScrollConfiguration(
+                                      behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
+                                        PointerDeviceKind.touch,
+                                        PointerDeviceKind.mouse,
+                                      },),
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        shrinkWrap: true,
+                                        itemCount: imus.length,
+                                        itemBuilder: (context, index) {
+                                        return Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: GestureDetector(
+                                            child: Tooltip(
+                                              message: imus[index],
+                                              child: AnimatedContainer(
+                                                duration:  const Duration(milliseconds: 500),
+                                                decoration: BoxDecoration(
+                                                    color: (chosenIMUIndex == index) ? Colors.white : Colors.white.withOpacity(0.5),
+                                                    borderRadius: const BorderRadius.all(Radius.circular(20))
+                                                ),
+                                                child: Center(
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      const Flexible(
+                                                        fit: FlexFit.loose,
+                                                        child: FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          child: Icon(
+                                                            Icons.sensors,
+                                                            color: _connectedIMUColor,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Flexible(
+                                                        fit: FlexFit.loose,
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                          child: FittedBox(
+                                                            fit: BoxFit.scaleDown,
+                                                            child: Text(
+                                                              imus[index].toString().substring(12),
+                                                              style: const TextStyle(
+                                                                color: Colors.grey,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      )
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            onTap: () {
+                                              setState(() {
+                                                chosenIMUIndex = index;
+                                              });
+                                            }
+                                          ),
+                                        );
+                                      }),
+                                    ),
+                                  )
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Flexible(
+                  fit: FlexFit.loose,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 5.0),)
+                )
+              ],
+            ),
           ),
-          Expanded(
-              flex: 4,
-              child: chartDashboards[curImu]
+          Positioned(
+            bottom: 0,
+            left: 0,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Builder(
+                      builder: (context) {
+                        return FloatingActionButton(
+                          heroTag: 'Options',
+                          onPressed: () {
+                            Scaffold.of(context).openDrawer();
+                          },
+                          tooltip: 'Options',
+                          child: const Icon(Icons.settings),
+                        );
+                      }
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                      heroTag: 'Imu status',
+                      onPressed: () {
+
+                      },
+                      tooltip: 'Imu status',
+                      child: const Icon(Icons.notifications),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                      heroTag: 'Play/Pause',
+                      onPressed: () {
+                        ref.read(playPauseProvider).playPause();
+                        if(ref.read(playPauseProvider).pause) {
+                          _playPauseAnimationController.forward();
+                        } else {
+                          _playPauseAnimationController.reverse();
+                        }
+                      },
+                      tooltip: 'Play/Pause',
+                      child: AnimatedIcon(icon: AnimatedIcons.pause_play, progress: _playPauseAnimationController),
+                    ),
+                  )
+                ],
+              ),
+            ),
           )
         ],
       ),
@@ -384,68 +807,213 @@ class ChartDashRoute extends ConsumerWidget {
   }
 }
 
+//ignore: must_be_immutable
+class MyHomePage extends ConsumerStatefulWidget{
+  Map properties;
+  Map<String, List<TextFieldClass>> addedIMUs;
+  MyHomePage({super.key, required this.properties, required this.addedIMUs});
 
-class MyHomePage extends StatelessWidget {
-  MyHomePage({super.key});
-  Map properties = {};
+  @override
+  ConsumerState<MyHomePage> createState() => _MyHomePage();
+}
+
+class _MyHomePage extends ConsumerState<MyHomePage>{
+  int animatedStackIndex = 0;
+  List<Widget> animatedStackChildren = [];
+  bool canContinue = true;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        color: Colors.lightBlue,
-        child: Row(
-          children: [
-            Expanded(
-                flex: 1,
-                child:  Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10),
-                  child: Card(
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                    elevation: 20,
-                    color: Colors.lightBlueAccent,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+    int imusNumber = ref.watch(imusCounter).imuCount;
+    String chosenAlg = ref.watch(chosenAlgorithmProvider).chosenAlg;
+
+    if(animatedStackIndex == 1) {
+      canContinue = imusNumber > 0;
+    } else if(animatedStackIndex == 2) {
+      canContinue = chosenAlg.isNotEmpty;
+    }
+
+    if(animatedStackChildren.isEmpty) {
+      animatedStackChildren = [
+        const Padding(
+          padding: EdgeInsets.all(8.0),
+          child: Image(image: AssetImage('assets/images/logo_round.png')),
+        ),
+        FractionallySizedBox(
+          widthFactor: 0.6,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: const BorderRadius.all(Radius.circular(10))
+                ),
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ExpansionTile(
+                      title: const Text('Add IMUs',),
                       children: [
-                        DashControl(properties: properties,),
+                        IMUList(addedIMUs: widget.addedIMUs['imus']!,),
                       ],
                     ),
-                  ),
-                )
+                    ExpansionTile(
+                      title: const Text('Add Feedback sensors',),
+                      children: [
+                        IMUList(isFeedbackList: true, addedIMUs: widget.addedIMUs['feedbacks']!,),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-            Expanded(
-              flex: 4,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 10),
-                  child: Card(
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                    elevation: 20,
-                    color: Colors.white,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Text(
-                              'Welcome to the motion sensing web app!',
-                              style: TextStyle(
-                                fontSize: 30,
-                                color: Colors.blue
-                              ),
+          ),
+        ),
+        ClipRRect(
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
+          child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: DashControl(properties: widget.properties,)
+          ),
+        ),
+      ];
+    }
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          const Image(
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              image: AssetImage('assets/images/bg.png')
+          ),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: AnimatedIndexedStack(
+                      index: animatedStackIndex,
+                      children: animatedStackChildren
+                  ),
+                ),
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 500),
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: animatedStackIndex == 0
+                                  ? Colors.grey.shade100.withOpacity(0.1)
+                                  : Theme.of(context).cardColor
+                          ),
+                          child: IconButton(
+                              onPressed: () => setState(() {
+                                if(animatedStackIndex > 0) {
+                                  animatedStackIndex -= 1;
+                                  return;
+                                }
+                              }),
+                              icon: const Icon(
+                                  Icons.arrow_back,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                        blurRadius: 5,
+                                        color: Colors.grey
+                                    )
+                                  ]
+                              )
                           ),
                         ),
-                        Padding(padding: EdgeInsets.all(60.0)),
-                        Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Image(image: AssetImage('assets/images/ms-image-one.png')),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 500),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: canContinue
+                                ? Theme.of(context).cardColor
+                                : Colors.grey.shade100.withOpacity(0.1)
+                          ),
+                          child: IconButton(
+                              onPressed: () => setState(() {
+                                if(!canContinue && animatedStackIndex == 1) {
+                                  showDialog(
+                                      context: context,
+                                      builder: (context) => BackdropFilter(
+                                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                          child: AlertDialog(
+                                            content: Text(
+                                              'IMU list cannot be empty',
+                                              style: Theme.of(context).textTheme.bodyText1,
+                                            ),
+                                          )
+                                      )
+                                  );
+                                  return;
+                                } else if(animatedStackIndex == 1) {
+                                  animatedStackIndex += 1;
+                                  Navigator.of(context).pushNamed('imus_route');
+                                  return;
+                                } else if(!canContinue && animatedStackIndex == 2) {
+                                  showDialog(
+                                      context: context,
+                                      builder: (context) => BackdropFilter(
+                                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                          child: AlertDialog(
+                                            content: Text(
+                                              'Please select an algorithm to continue',
+                                              style: Theme.of(context).textTheme.bodyText1,
+                                            ),
+                                          )
+                                      )
+                                  );
+                                  return;
+                                } else if(animatedStackIndex < animatedStackChildren.length - 1) {
+                                  animatedStackIndex += 1;
+                                  return;
+                                }
+
+                                ref.read(requestAnswerProvider).startStopDataCollection();
+                                ref.read(requestAnswerProvider).setQuery('set_params');
+                                ref.read(requestAnswerProvider).setParamsMap(widget.properties);
+                                ref.read(requestAnswerProvider).filename = widget.properties['output_file'];
+                                ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
+                                Navigator.of(context).pushNamed('chart_dash_route');
+                              }),
+                              icon: const Icon(
+                                  Icons.arrow_forward,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                        blurRadius: 5,
+                                        color: Colors.grey
+                                    )
+                                  ]
+                              )
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 )
-            )
-          ],
-        ),
+              ],
+            ),
+          )
+        ],
       ),
     );
   }

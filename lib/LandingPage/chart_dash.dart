@@ -1,12 +1,25 @@
+import 'dart:io';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'requests.dart';
 import 'dart:convert';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'dart:async';
 import 'dart:collection';
+import 'package:csv/csv.dart';
+
+const narrowWidth = 800;
+
+class TextFieldClass{
+  TextEditingController controller = TextEditingController();
+  String imuMac;
+
+  TextFieldClass({required this.controller, this.imuMac='88:6B:0F:E1:D8:68'});
+}
 
 class RawData {
   int timeStep;
@@ -18,12 +31,10 @@ class RawData {
   }
 }
 
-// IMU request types:
-//   "raw_data"
-// TODO: add algorithm requests
 class RequestHandler extends ChangeNotifier {
   String url;
   String query = "?request_type=";
+  String curAlg = '';
   List algorithms = [];
   List curAlgParams = [];
   List imus = [];
@@ -32,28 +43,15 @@ class RequestHandler extends ChangeNotifier {
   Ref ref;
   Map checkpointDataBuffer = {};
   Map dataTypes = {};
+  String? filename;
+  File? outputFile;
+  bool stop = true;
+  bool createdFile = false;
+  bool saveFile = true;
+  bool shouldInitBuffers = false;
   final int bufferSize = 500;
 
   RequestHandler(this.url, this.ref) {
-    getAlgList();
-    // dataBuffer["ACC0-X"] =
-    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    // dataBuffer["ACC0-Y"] =
-    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    // dataBuffer["ACC0-Z"] =
-    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    //
-    // dataBuffer["GYRO0-X"] =
-    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    // dataBuffer["GYRO0-Y"] =
-    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    // dataBuffer["GYRO0-Z"] =
-    //     Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-    //
-    // dataBuffer.forEach((key, value) {
-    //   checkpointDataBuffer[key] = value.toList();
-    // });
-
     Timer.periodic(const Duration(milliseconds: 100), updateDataSource);
   }
 
@@ -63,6 +61,11 @@ class RequestHandler extends ChangeNotifier {
 
   void setQuery(String query) {
     this.query = "?request_type=$query";
+  }
+
+  void startStopDataCollection({bool stop=true}) {
+    this.stop = stop;
+    outputFile = null;
   }
 
   Future<Map> getDecodedData() async {
@@ -94,6 +97,14 @@ class RequestHandler extends ChangeNotifier {
     return true;
   }
 
+  Future<bool> getCurAlg() async {
+    query = '?request_type=get_cur_alg';
+    Map data = await getDecodedData();
+    curAlg = data['cur_alg'];
+
+    return true;
+  }
+
   Future<bool> getDataTypes() async {
     query = '?request_type=get_data_types';
     Map data = await getDecodedData();
@@ -113,23 +124,56 @@ class RequestHandler extends ChangeNotifier {
     }
   }
 
-  List provideRawData(String imu, String dataType) {
-    return checkpointDataBuffer[imu][dataType].toList();
+  Map provideRawData(String imu) {
+    return checkpointDataBuffer[imu];
+  }
+
+  void initBuffers() {
+    dataBuffer = {};
+    checkpointDataBuffer = {};
+    for (var imu in imus) {
+      dataBuffer[imu] = {};
+      dataTypes.forEach((key, value) {
+        for (var type in value) {
+          dataBuffer[imu][type] =
+              Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+        }
+      });
+    }
+
+    dataBuffer.forEach((imu, imuData) {
+      checkpointDataBuffer[imu] = {};
+      dataBuffer[imu].forEach((dataType, data) {
+        checkpointDataBuffer[imu][dataType] = data.toList();
+      });
+    });
   }
 
   void updateDataSource(Timer timer) async {
+    List row = [];
+    List headers = [];
+
+    if(imus.isEmpty) {
+      return;
+    }
+
     if(algorithms.isEmpty) {
-      getAlgList();
+      await getAlgList();
       notifyListeners();
     }
 
     if(curAlgParams.isEmpty) {
-      getAlgParams();
+      await getAlgParams();
       notifyListeners();
     }
 
-    if(imus.isEmpty) {
-      getImus();
+    // if(imus.isEmpty) {
+    //   await getImus();
+    //   notifyListeners();
+    // }
+
+    if(curAlg == '') {
+      await getCurAlg();
       notifyListeners();
     }
 
@@ -138,46 +182,40 @@ class RequestHandler extends ChangeNotifier {
       notifyListeners();
     }
 
-    if(dataBuffer.isEmpty) {
-      for (var imu in imus) {
-        dataBuffer[imu] = {};
-        dataTypes.forEach((key, value) {
-          for (var type in value) {
-            dataBuffer[imu][type] =
-                Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-          }
-        });
-      }
 
-      // for (var type in dataTypes) {
-      //   dataBuffer[type] =
-      //       Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
-      // }
-
-      dataBuffer.forEach((imu, imuData) {
-        checkpointDataBuffer[imu] = {};
-        dataBuffer[imu].forEach((dataType, data) {
-          checkpointDataBuffer[imu][dataType] = data.toList();
-        });
-      });
-    }
 
     if(query == '?request_type=set_params') {
       var body = json.encode(paramsToSet);
       await setParams(Uri.parse(url+query), body);
-      setQuery('raw_data');
+      setQuery(curAlg);
       return;
     }
 
-    query = '?request_type=raw_data';
+    if(dataBuffer.isEmpty || shouldInitBuffers) {
+      initBuffers();
+      shouldInitBuffers = false;
+    }
+
+    if(stop) {
+      return;
+    }
+
+
+
+    query = '?request_type=$curAlg';
 
     var data = await getData(Uri.parse(url + query));
-    // var types = ['ACC', 'GYRO'];
-    // var axis = ['X', 'Y', 'Z'];
     var decodedData = jsonDecode(data);
     for (var imu in imus) {
-      dataTypes.forEach((key, value) {
+      row.add(imu);
+      headers.add('IMU');
+      dataTypes.forEach((key, value) async {
         for (var type in value) {
+          if(decodedData[imu] == null) {
+            continue;
+          }
+
+          headers.add(type);
           var strList = decodedData[imu][type]
               .toString()
               .replaceAll(RegExp(r'[\[\],]'), '')
@@ -189,8 +227,9 @@ class RequestHandler extends ChangeNotifier {
           for (int k = 0; k < rawDataList.length; k++) {
             rawDataList[k].setTimeStep = k;
           }
-
           dataBuffer[imu][type].addAll(rawDataList);
+          row.add(strList.last);
+
           while (dataBuffer[imu][type].length > 500) {
             dataBuffer[imu][type].removeFirst();
           }
@@ -206,36 +245,47 @@ class RequestHandler extends ChangeNotifier {
       }
     }
 
-    notifyListeners();
+    if(filename != null) { //Should write output to disk
+      if (outputFile == null) { //Output file was not created yet
+        var status = await Permission.storage.status;
 
-    // for (int i = 0; i < 2; i++) {
-    //   for (int j = 0; j< 3; j++) {
-    //     var strList = decodedData['0']['${types[i]}-${axis[j]}']
-    //         .toString()
-    //         .replaceAll(RegExp(r'[\[\],]'), '')
-    //         .split(' ')
-    //         .toList();
-    //     var rawDataList = strList
-    //         .map((x) => RawData(strList.indexOf(x), double.parse(x)))
-    //         .toList();
-    //     for (int k = 0; k < rawDataList.length; k++) {
-    //       rawDataList[k].setTimeStep = k;
-    //     }
-    //
-    //     dataBuffer['${types[i]}-${axis[j]}'].addAll(rawDataList);
-    //     while (dataBuffer['${types[i]}-${axis[j]}'].length > 500) {
-    //       dataBuffer['${types[i]}-${axis[j]}'].removeFirst();
-    //     }
-    //   }
-    //
-    //   if(!ref.read(playPauseProvider).pause) {
-    //     dataBuffer.forEach((key, value) {
-    //       checkpointDataBuffer[key] = value.toList();
-    //     });
-    //   }
-    //
-    //   notifyListeners();
+        if (!status.isGranted) {
+          await Permission.storage.request();
+        }
+
+        if (await Permission.storage.request().isGranted) {
+          try {
+            outputFile = await File(filename!).create(recursive: true);
+            String csv = const ListToCsvConverter().convert([headers, row]);
+            row.clear();
+            outputFile?.writeAsString('$csv\n');
+          } catch (e) {
+
+          }
+        }
+      } else {
+        String csv = const ListToCsvConverter().convert([row]);
+        outputFile?.writeAsString('$csv\n', mode: FileMode.append);
+      }
+    }
+
+    // else {
+    //   String csv = const ListToCsvConverter().convert([[row]]);
+    //   outputFile?.writeAsString('$csv\n', mode: FileMode.append);
     // }
+
+    notifyListeners();
+  }
+
+  Future connectToIMUs(Map<String, List<TextFieldClass>> addedIMUs) async {
+    Map<String, List<String>> addedIMUSStrings = {
+      'imus': addedIMUs['imus']!.map((e) => e.imuMac).toList(),
+      'feedbacks': addedIMUs['feedbacks']!.map((e) => e.imuMac).toList()
+    };
+    // imus = addedIMUSStrings['imus']!;
+    var body = json.encode(addedIMUSStrings);
+    // var body = json.encode({'imus': ['8889989'], 'feedbacks': []});
+    return await setParams(Uri.parse('$url?request_type=set_imus'), body);
   }
 }
 
@@ -248,55 +298,6 @@ class PlayPause extends ChangeNotifier {
   }
 }
 
-// class ChartCheckBox extends ChangeNotifier {
-//   bool _isCheckedAcclX = true;
-//   bool _isCheckedAcclY = true;
-//   bool _isCheckedAcclZ = true;
-//   bool _isCheckedGyroX = false;
-//   bool _isCheckedGyroY = false;
-//   bool _isCheckedGyroZ = false;
-//
-//   bool atLeastOneChecked() {
-//     return _isCheckedAcclX ||  _isCheckedAcclY || _isCheckedAcclZ
-//         || _isCheckedGyroX || _isCheckedGyroY || _isCheckedGyroZ;
-//   }
-//
-//   void checkUncheck(String chartType) {
-//     switch(chartType) {
-//       case 'ACC0-X': {
-//         _isCheckedAcclX = !_isCheckedAcclX;
-//       }
-//       break;
-//
-//       case 'ACC0-Y': {
-//         _isCheckedAcclY = !_isCheckedAcclY;
-//       }
-//       break;
-//
-//       case 'ACC0-Z': {
-//         _isCheckedAcclZ = !_isCheckedAcclZ;
-//       }
-//       break;
-//
-//       case 'GYRO0-X': {
-//         _isCheckedGyroX = !_isCheckedGyroX;
-//       }
-//       break;
-//
-//       case 'GYRO0-Y': {
-//         _isCheckedGyroY = !_isCheckedGyroY;
-//       }
-//       break;
-//
-//       case 'GYRO0-Z': {
-//         _isCheckedGyroZ = !_isCheckedGyroZ;
-//       }
-//     }
-//
-//     notifyListeners();
-//   }
-// }
-
 class AlgListManager extends ChangeNotifier {
   String chosenAlg = '';
 
@@ -306,9 +307,23 @@ class AlgListManager extends ChangeNotifier {
   }
 }
 
-// final checkBoxProvider = ChangeNotifierProvider((ref) {
-//   return ChartCheckBox();
-// });
+class IMUsCounter extends ChangeNotifier {
+  int imuCount = 0;
+  void inc() {
+    imuCount += 1;
+    notifyListeners();
+  }
+
+  void dec() {
+    imuCount -= 1;
+    notifyListeners();
+  }
+}
+
+final imusCounter = ChangeNotifierProvider((ref) {
+  return IMUsCounter();
+});
+
 
 final playPauseProvider = ChangeNotifierProvider((ref) {
   return PlayPause();
@@ -322,179 +337,186 @@ final chosenAlgorithmProvider = ChangeNotifierProvider((ref) {
   return AlgListManager();
 });
 
-class DataChart extends ConsumerWidget {
+class DataChart extends ConsumerStatefulWidget{
+  final String imu;
+  final String dataType;
+  final bool isMainChart;
+  final Color mainChartColor;
+  @override
+  ConsumerState<DataChart> createState() => _DataChart();
+  const DataChart({Key? key, required this.imu, required this.dataType,  this.isMainChart=false,  this.mainChartColor=Colors.white}) : super(key: key);
+}
+
+class _DataChart extends ConsumerState<DataChart> {
   // final TooltipBehavior _tooltipBehavior = TooltipBehavior(enable: true);
   final _zoomPanBehavior =
   ZoomPanBehavior(enableMouseWheelZooming: true, enablePanning: true);
-  final String imu;
-  final String dataType;
-
-  DataChart({Key? key, required this.imu, required this.dataType}) : super(key: key);
+  Map dataTypes = {};
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var rawDataSource = ref.watch(requestAnswerProvider).provideRawData(imu, dataType);
-
-    return Card(
-      // elevation: 20,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-      color: Colors.white,
-      child: SfCartesianChart(
-        title: ChartTitle(
-            text: dataType
-        ),
-        legend: Legend(isVisible: true),
-        zoomPanBehavior: _zoomPanBehavior,
-        // tooltipBehavior: _tooltipBehavior,
-        series: <ChartSeries>[
+  Widget build(BuildContext context) {
+    dataTypes = ref.watch(requestAnswerProvider).dataTypes;
+    var rawDataSource = ref.watch(requestAnswerProvider).provideRawData(widget.imu);
+    List<ChartSeries<dynamic, dynamic>> series = [];
+    for(var subType in dataTypes[widget.dataType]) {
+      series.add(
           SplineSeries(
-              dataSource: rawDataSource,
-              name: dataType,
+              dataSource: rawDataSource[subType].toList(),
+              name: subType,
               enableTooltip: true,
-              // onRendererCreated: (ChartSeriesController controller) {
-              //   _chartSeriesController = controller;
-              // },
               animationDuration: 0,
               xValueMapper: (dynamic rD, _) => rD.timeStep,
               yValueMapper: (dynamic rD, _) => rD.value
           )
-        ],
-        primaryXAxis:
-        NumericAxis(edgeLabelPlacement: EdgeLabelPlacement.shift),
+      );
+    }
+
+    if(widget.isMainChart) {
+      return Card(
+        // elevation: 20,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+        color: widget.mainChartColor,
+        child: SfCartesianChart(
+          title: ChartTitle(
+              text: widget.dataType
+          ),
+          legend: Legend(isVisible: true),
+          zoomPanBehavior: _zoomPanBehavior,
+          // tooltipBehavior: _tooltipBehavior,
+          series: series,
+          primaryXAxis:
+          NumericAxis(edgeLabelPlacement: EdgeLabelPlacement.shift),
+        ),
+      );
+    }
+
+    return SfCartesianChart(
+      title: ChartTitle(
+          text: widget.dataType,
+          textStyle: const TextStyle(
+            color: Colors.black
+          )
       ),
+      legend: Legend(isVisible: true,),
+      zoomPanBehavior: _zoomPanBehavior,
+      // tooltipBehavior: _tooltipBehavior,
+      series: series,
+      primaryXAxis:
+      NumericAxis(edgeLabelPlacement: EdgeLabelPlacement.shift),
     );
   }
 }
 
 class ChartDash extends ConsumerStatefulWidget{
   final String imu;
-  ChartDash({required this.imu, super.key});
+  const ChartDash({required this.imu, super.key});
 
   @override
   ConsumerState<ChartDash> createState() => _ChartDash();
 }
 
 class _ChartDash extends ConsumerState<ChartDash> {
-  late List charts;
   DataChart? mainChart;
-  int _key = 1;
-  late List<Color> _dynamicBorders;
+  final int _key = 1;
+  Color highlightedBorder = Colors.lightBlueAccent.shade100;
   late List algorithms;
   String? dropdownValue='';
+  Map dataTypes = {};
+  List tapped = [];
+  List types = [];
 
-  _ChartDash(){
-    charts = ['ACC-X', 'ACC-Y', 'ACC-Z', 'GYRO-X', 'GYRO-Y', 'GYRO-Z'];
-    _dynamicBorders = [for(int i = 0; i < charts.length; i++) Colors.transparent];
-  }
+  Widget createStackOrList(BuildContext context, BoxConstraints constraints) {
+    var height = constraints.maxHeight;
+    var width = constraints.maxWidth;
 
-  Color getColor(Set<MaterialState> states) {
-    const Set<MaterialState> interactiveStates = <MaterialState>{
-      MaterialState.pressed,
-      MaterialState.hovered,
-      MaterialState.focused,
-    };
-    if (states.any(interactiveStates.contains)) {
-      return Colors.blue;
+    if(MediaQuery.of(context).size.width > narrowWidth) {
+      return Stack(
+        children: List.generate(tapped.length, (i) {
+          return AnimatedPositioned(
+            top: tapped[i] ? 0 : height * 0.65,
+            bottom: tapped[i] ? height * 0.35 : 0,
+            // height: tapped[i] ? 0.75 * height : 0.25 * height,
+            left: tapped[i] ? 0 : (i * width / tapped.length),
+            // right: tapped[i] ? 0 : ((tapped.length - i - 1) * width / tapped.length),
+            width: tapped[i] ? width : width / tapped.length,
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.fastOutSlowIn,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  for(int j = 0; j < tapped.length; j++) {
+                    if(j == i) {
+                      tapped[j] = !tapped[j];
+                    } else {
+                      tapped[j] = false;
+                    }
+                  }
+
+                  // if(tapped[i]) {
+                  //   bringToTheTopOfStack(i);
+                  // }
+                });
+              },
+              child: Card(
+                color: Colors.white,
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: LimitedBox(
+                      child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key))),
+                ),
+              ),
+            ),
+          );
+        }),
+      );
     }
-    return Colors.green;
+
+    return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
+      var size = min(constraints.maxWidth, constraints.maxHeight);
+      return ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+        },),
+        child:  ListView.builder(
+            shrinkWrap: true,
+            scrollDirection: Axis.vertical,
+            itemCount: types.length,
+            itemBuilder: (BuildContext context, int index) {
+              return SizedBox(
+                width: size,
+                height: size,
+                child: Card(
+                  color: Colors.white,
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                        Expanded(child: DataChart(imu: widget.imu, dataType: types[index], key: ValueKey(_key))),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+        ),
+      );
+    });
+
   }
 
   @override
   Widget build(BuildContext context) {
-    mainChart ??= DataChart(imu: widget.imu, dataType: charts[0], key: ValueKey(_key),);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Container(
-          color: Colors.lightBlue,
-          child: Column(
-            // color: Colors.lightBlueAccent,
-              children: [Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(widget.imu),
-                      ),
-                      Flexible(
-                          flex: 2,
-                          child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 800),
-                              transitionBuilder: (Widget child, Animation<double> animation) {
-                                return ScaleTransition(scale: animation, child: child);
-                              },
-                              child: mainChart
-                          )
-                      ),
-                      Flexible(
-                        flex: 1,
-                        child: Card(
-                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                          elevation: 20,
-                          color: Colors.lightBlueAccent,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: ScrollConfiguration(
-                              behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
-                                //PointerDeviceKind.touch,
-                                PointerDeviceKind.mouse,
-                              },),
-                              child: ListView(
-                                scrollDirection: Axis.horizontal,
-                                children: [
-                                  for(int i = 0; i< charts.length; i++) GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _key = (_key == 2 ? 1 : 2);
-                                          mainChart = DataChart(imu: widget.imu, dataType: charts[i], key: ValueKey(_key));
-                                          for (int j = 0; j < charts.length; j++){
-                                            if (j == i){
-                                              _dynamicBorders[j] = (_dynamicBorders[j] == Colors.transparent
-                                                  ? Colors.lightBlueAccent.shade100
-                                                  : Colors.transparent);
-                                            } else {
-                                              _dynamicBorders[j] = Colors.transparent;
-                                            }
-                                          }
+    dataTypes = ref.watch(requestAnswerProvider).dataTypes;
+    if(types.isEmpty && dataTypes.isNotEmpty) {
+      types = dataTypes.keys.toList();
+      tapped = List.generate(types.length, (index) => false);
+    }
 
-                                        });
-                                      },
-                                      child: Column(
-                                        children: [
-                                          Expanded(
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(16.0),
-                                                child: AnimatedContainer(
-                                                    decoration: BoxDecoration(
-                                                        border: Border.all(
-                                                            width: 6,
-                                                            color: _dynamicBorders[i]
-                                                        ) ,
-                                                        borderRadius: const BorderRadius.all(Radius.circular(20)),
-                                                        color: Colors.white
-                                                    ),
-                                                    duration: const Duration(milliseconds: 800),
-                                                    child: DataChart(imu: widget.imu, dataType: charts[i], key: ValueKey(_key))
-                                                ),
-                                              )
-                                          ),
-                                        ],
-                                      )
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              )]
-          )
-        );
-      },
+    return LayoutBuilder(
+      builder: createStackOrList,
     );
   }
 }
