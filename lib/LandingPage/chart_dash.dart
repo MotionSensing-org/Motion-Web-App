@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -12,7 +13,9 @@ import 'dart:async';
 import 'dart:collection';
 import 'package:csv/csv.dart';
 
-const narrowWidth = 800;
+const narrowWidth = 650;
+const shortHeight = 700;
+
 
 class TextFieldClass{
   TextEditingController controller = TextEditingController();
@@ -320,6 +323,21 @@ class IMUsCounter extends ChangeNotifier {
   }
 }
 
+class ShortTall extends ChangeNotifier {
+  bool isShort(BuildContext context) {
+   return MediaQuery.of(context).size.height <= shortHeight;
+  }
+
+  bool isNarrow(BuildContext context) {
+    return MediaQuery.of(context).size.width <= narrowWidth;
+  }
+}
+
+final shortTallProvider = ChangeNotifierProvider((ref) {
+  return ShortTall();
+});
+
+
 final imusCounter = ChangeNotifierProvider((ref) {
   return IMUsCounter();
 });
@@ -380,7 +398,10 @@ class _DataChart extends ConsumerState<DataChart> {
           title: ChartTitle(
               text: widget.dataType
           ),
-          legend: Legend(isVisible: true),
+          legend: Legend(
+              isVisible: true,
+              position: LegendPosition.bottom
+          ),
           zoomPanBehavior: _zoomPanBehavior,
           // tooltipBehavior: _tooltipBehavior,
           series: series,
@@ -394,10 +415,15 @@ class _DataChart extends ConsumerState<DataChart> {
       title: ChartTitle(
           text: widget.dataType,
           textStyle: const TextStyle(
-            color: Colors.black
+            color: Colors.black,
+            fontSize: 10
           )
       ),
-      legend: Legend(isVisible: true,),
+      legend: Legend(
+        isVisible: true,
+        overflowMode: LegendItemOverflowMode.wrap,
+        position: LegendPosition.bottom,
+      ),
       zoomPanBehavior: _zoomPanBehavior,
       // tooltipBehavior: _tooltipBehavior,
       series: series,
@@ -425,86 +451,90 @@ class _ChartDash extends ConsumerState<ChartDash> {
   List tapped = [];
   List types = [];
 
-  Widget createStackOrList(BuildContext context, BoxConstraints constraints) {
+  Widget createStack(BuildContext context, BoxConstraints constraints) {
     var height = constraints.maxHeight;
     var width = constraints.maxWidth;
+    bool isShort = ref.watch(shortTallProvider).isShort(context);
+    bool isNarrow = ref.watch(shortTallProvider).isNarrow(context);
 
-    if(MediaQuery.of(context).size.width > narrowWidth) {
-      return Stack(
-        children: List.generate(tapped.length, (i) {
-          return AnimatedPositioned(
-            top: tapped[i] ? 0 : height * 0.65,
-            bottom: tapped[i] ? height * 0.35 : 0,
-            // height: tapped[i] ? 0.75 * height : 0.25 * height,
-            left: tapped[i] ? 0 : (i * width / tapped.length),
-            // right: tapped[i] ? 0 : ((tapped.length - i - 1) * width / tapped.length),
-            width: tapped[i] ? width : width / tapped.length,
-            duration: const Duration(milliseconds: 900),
-            curve: Curves.fastOutSlowIn,
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  for(int j = 0; j < tapped.length; j++) {
-                    if(j == i) {
-                      tapped[j] = !tapped[j];
-                    } else {
-                      tapped[j] = false;
-                    }
+    return Stack(
+      alignment: Alignment.center,
+      children: List.generate(tapped.length, (i) {
+        double largeChartHeight = (isShort || isNarrow ? height * 0.9 : height * 0.6);
+        double chartHeight = (isShort || isNarrow ? height * 0.1 : height * 0.4);
+        double chartWidth = (isShort || isNarrow ? width * 0.2 : width / tapped.length);
+        double chartLeft = tapped[i] ? 0 : (i * chartWidth);
+
+        return AnimatedPositioned(
+          top: tapped[i] ? 0 : largeChartHeight,
+          bottom: tapped[i] ? chartHeight : 0,
+          // height: tapped[i] ? 0.75 * height : 0.25 * height,
+          left: chartLeft,
+          // right: tapped[i] ? 0 : ((tapped.length - i - 1) * width / tapped.length),
+          width: tapped[i] ? width : chartWidth,
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.fastOutSlowIn,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                for(int j = 0; j < tapped.length; j++) {
+                  if(j == i) {
+                    tapped[j] = !tapped[j];
+                  } else {
+                    tapped[j] = false;
                   }
+                }
 
-                  // if(tapped[i]) {
-                  //   bringToTheTopOfStack(i);
-                  // }
-                });
-              },
-              child: Card(
+                // if(tapped[i]) {
+                //   bringToTheTopOfStack(i);
+                // }
+              });
+            },
+            child: AnimatedCrossFade(
+              crossFadeState: (!isNarrow && !isShort) || tapped[i]
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              firstChild: Tooltip(
+                message: types[i],
+                child: Card(
+                  color: Colors.white,
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.all(2.0),
+                            child: Icon(Icons.show_chart_rounded),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(2.0),
+                            child: Text(types[i]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              secondChild: Card(
                 color: Colors.white,
                 shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: LimitedBox(
-                      child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key))),
+                  child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key)),
                 ),
               ),
+              duration: const Duration(milliseconds: 500),
+              reverseDuration: const Duration(milliseconds: 50),
+              firstCurve: Curves.easeIn,
             ),
-          );
-        }),
-      );
-    }
-
-    return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
-      var size = min(constraints.maxWidth, constraints.maxHeight);
-      return ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
-          PointerDeviceKind.touch,
-          PointerDeviceKind.mouse,
-        },),
-        child:  ListView.builder(
-            shrinkWrap: true,
-            scrollDirection: Axis.vertical,
-            itemCount: types.length,
-            itemBuilder: (BuildContext context, int index) {
-              return SizedBox(
-                width: size,
-                height: size,
-                child: Card(
-                  color: Colors.white,
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      children: [
-                        Expanded(child: DataChart(imu: widget.imu, dataType: types[index], key: ValueKey(_key))),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-        ),
-      );
-    });
-
+          ),
+        );
+      }),
+    );
   }
 
   @override
@@ -516,7 +546,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
     }
 
     return LayoutBuilder(
-      builder: createStackOrList,
+      builder: createStack,
     );
   }
 }

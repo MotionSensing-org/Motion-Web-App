@@ -488,6 +488,8 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
     List<Widget> displayItems = [];
     List<Widget> algParams = [];
     List imus = ref.watch(requestAnswerProvider).imus;
+    bool isShort = ref.watch(shortTallProvider).isShort(context);
+    bool isNarrow = ref.watch(shortTallProvider).isNarrow(context);
 
     widget.properties.forEach((key, value) {
       if(key == 'alg_name') {
@@ -555,6 +557,248 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
       )
     ]);
 
+    Widget chartsForDisplay = ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+            decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: const BorderRadius.all(Radius.circular(20))
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: AnimatedIndexedStack(
+                  duration: const Duration(milliseconds: 500),
+                  index: chosenIMUIndex,
+                  children: List.generate(imus.length, (index) {
+                    return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
+                      return Stack(
+                        alignment: Alignment.center,
+                          children: [
+                            Positioned(
+                              child: Icon(
+                                Icons.show_chart,
+                                color: Colors.white,
+                                size: constraints.maxWidth
+                                    / (isShort || isNarrow ? 4 : 10),
+                              ),
+                            ),
+                            ChartDash(imu: imus[index],)
+                          ]
+                      );
+                    });
+                  })
+              ),
+            )
+        ),
+      ),
+    );
+
+    Widget chartToggleButtons = ClipRRect(
+      borderRadius: const BorderRadius.all(Radius.circular(20)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+            decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: const BorderRadius.all(Radius.circular(10))
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.mouse,
+                },),
+                child: ListView.builder(
+                    scrollDirection: isShort || isNarrow ? Axis.vertical : Axis.horizontal,
+                    shrinkWrap: true,
+                    itemCount: imus.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: GestureDetector(
+                            child: Tooltip(
+                              message: imus[index],
+                              child: AnimatedContainer(
+                                duration:  const Duration(milliseconds: 500),
+                                decoration: BoxDecoration(
+                                    color: (chosenIMUIndex == index) ? Colors.white : Colors.white.withOpacity(0.5),
+                                    borderRadius: const BorderRadius.all(Radius.circular(20))
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Flexible(
+                                        fit: FlexFit.loose,
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Icon(
+                                            Icons.sensors,
+                                            color: _connectedIMUColor,
+                                          ),
+                                        ),
+                                      ),
+                                      Flexible(
+                                        fit: FlexFit.loose,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          child: FittedBox(
+                                            fit: BoxFit.contain,
+                                            child: Text(
+                                              imus[index].toString().substring(12),
+                                              style: const TextStyle(
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            onTap: () {
+                              setState(() {
+                                chosenIMUIndex = index;
+                              });
+                            }
+                        ),
+                      );
+                    }),
+              ),
+            )
+        ),
+      ),
+    );
+
+    List<Widget> controlButtonList = [
+      Flexible(
+        fit: FlexFit.loose,
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Builder(
+              builder: (context) {
+                return FloatingActionButton(
+                  heroTag: 'Options',
+                  onPressed: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                  tooltip: 'Options',
+                  child: const Icon(Icons.settings),
+                );
+              }
+          ),
+        ),
+      ),
+      Flexible(
+        fit: FlexFit.loose,
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: FloatingActionButton(
+            heroTag: 'Imu status',
+            onPressed: () {
+
+            },
+            tooltip: 'Imu status',
+            child: const Icon(Icons.notifications),
+          ),
+        ),
+      ),
+      Flexible(
+        fit: FlexFit.loose,
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: FloatingActionButton(
+            heroTag: 'Play/Pause',
+            onPressed: () {
+              ref.read(playPauseProvider).playPause();
+              if(ref.read(playPauseProvider).pause) {
+                _playPauseAnimationController.forward();
+              } else {
+                _playPauseAnimationController.reverse();
+              }
+            },
+            tooltip: 'Play/Pause',
+            child: AnimatedIcon(icon: AnimatedIcons.pause_play, progress: _playPauseAnimationController),
+          ),
+        ),
+      )
+    ];
+
+    Widget regularDash = Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        //mainAxisSize: MainAxisSize.min,
+        children: [
+          Expanded(
+            flex: 4,
+            child: chartsForDisplay,
+          ),
+          Expanded(
+            flex: 1,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(fit: FlexFit.loose, child: chartToggleButtons),
+                ],
+              ),
+            ),
+          ),
+          const Flexible(
+              fit: FlexFit.loose,
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 2.0),)
+          )
+        ],
+      ),
+    );
+
+    Widget smallDash = Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Expanded(
+            flex: 7,
+            child: chartsForDisplay,
+          ),
+          Flexible(
+            fit: FlexFit.loose,
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(fit: FlexFit.loose, child: chartToggleButtons),
+                  Flexible(
+                     fit: FlexFit.loose,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: controlButtonList,
+                        ),
+                      )
+                  )
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Scaffold(
       drawer: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -572,6 +816,8 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
         ),
       ),
       body: Stack(
+        fit: StackFit.expand,
+        alignment: Alignment.center,
         children: [
           const Image(
               fit: BoxFit.cover,
@@ -579,203 +825,16 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
               height: double.infinity,
               image: AssetImage('assets/images/bg.png')
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Expanded(
-                  flex: 7,
-                  child: ClipRRect(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                          decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              borderRadius: const BorderRadius.all(Radius.circular(20))
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: AnimatedIndexedStack(
-                                duration: const Duration(milliseconds: 500),
-                                index: chosenIMUIndex,
-                                children: List.generate(imus.length, (index) {
-                                  return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
-                                    return Stack(
-                                        children: [
-                                          Positioned(
-                                            top: 0,
-                                            left: 3 * constraints.maxWidth / 8,
-                                            child: Icon(
-                                              Icons.show_chart,
-                                              color: Colors.white,
-                                              size: constraints.maxWidth / 4,
-                                            ),
-                                          ),
-                                          ChartDash(imu: imus[index],)
-                                        ]
-                                    );
-                                  });
-                                })
-                            ),
-                          )
-                      ),
-                    ),
-                  ),
-                ),
-                Flexible(
-                  flex: 1,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          fit: FlexFit.loose,
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.all(Radius.circular(20)),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: Container(
-                                  decoration: BoxDecoration(
-                                      color: Theme.of(context).cardColor,
-                                      borderRadius: const BorderRadius.all(Radius.circular(10))
-                                  ),
-                                  child: Center(
-                                    child: ScrollConfiguration(
-                                      behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
-                                        PointerDeviceKind.touch,
-                                        PointerDeviceKind.mouse,
-                                      },),
-                                      child: ListView.builder(
-                                        scrollDirection: Axis.horizontal,
-                                        shrinkWrap: true,
-                                        itemCount: imus.length,
-                                        itemBuilder: (context, index) {
-                                        return Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: GestureDetector(
-                                            child: Tooltip(
-                                              message: imus[index],
-                                              child: AnimatedContainer(
-                                                duration:  const Duration(milliseconds: 500),
-                                                decoration: BoxDecoration(
-                                                    color: (chosenIMUIndex == index) ? Colors.white : Colors.white.withOpacity(0.5),
-                                                    borderRadius: const BorderRadius.all(Radius.circular(20))
-                                                ),
-                                                child: Center(
-                                                  child: Column(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      const Flexible(
-                                                        fit: FlexFit.loose,
-                                                        child: FittedBox(
-                                                          fit: BoxFit.scaleDown,
-                                                          child: Icon(
-                                                            Icons.sensors,
-                                                            color: _connectedIMUColor,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      Flexible(
-                                                        fit: FlexFit.loose,
-                                                        child: Padding(
-                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                          child: FittedBox(
-                                                            fit: BoxFit.scaleDown,
-                                                            child: Text(
-                                                              imus[index].toString().substring(12),
-                                                              style: const TextStyle(
-                                                                color: Colors.grey,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      )
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            onTap: () {
-                                              setState(() {
-                                                chosenIMUIndex = index;
-                                              });
-                                            }
-                                          ),
-                                        );
-                                      }),
-                                    ),
-                                  )
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const Flexible(
-                  fit: FlexFit.loose,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 5.0),)
-                )
-              ],
-            ),
-          ),
+          isShort || isNarrow ? smallDash : regularDash,
           Positioned(
             bottom: 0,
             left: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
+            child: Visibility(
+              visible: !isShort && !isNarrow,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Builder(
-                      builder: (context) {
-                        return FloatingActionButton(
-                          heroTag: 'Options',
-                          onPressed: () {
-                            Scaffold.of(context).openDrawer();
-                          },
-                          tooltip: 'Options',
-                          child: const Icon(Icons.settings),
-                        );
-                      }
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: FloatingActionButton(
-                      heroTag: 'Imu status',
-                      onPressed: () {
-
-                      },
-                      tooltip: 'Imu status',
-                      child: const Icon(Icons.notifications),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: FloatingActionButton(
-                      heroTag: 'Play/Pause',
-                      onPressed: () {
-                        ref.read(playPauseProvider).playPause();
-                        if(ref.read(playPauseProvider).pause) {
-                          _playPauseAnimationController.forward();
-                        } else {
-                          _playPauseAnimationController.reverse();
-                        }
-                      },
-                      tooltip: 'Play/Pause',
-                      child: AnimatedIcon(icon: AnimatedIcons.pause_play, progress: _playPauseAnimationController),
-                    ),
-                  )
-                ],
-              ),
+                children: controlButtonList,
+               )
             ),
           )
         ],
