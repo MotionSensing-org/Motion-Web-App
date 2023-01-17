@@ -127,6 +127,11 @@ class _AlgParams extends ConsumerState<AlgParams>{
     List curAlgParams = ref.watch(requestAnswerProvider).curAlgParams;
     String currentAlgorithm = ref.watch(chosenAlgorithmProvider).chosenAlg;
     List<Widget> params = [];
+    if(widget.properties['output_file'] == null) {
+      setState(() {
+        outputFileForDisplay = '';
+      });
+    }
 
     params.add(
         Text(
@@ -549,8 +554,8 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
               ),
             ),
             onPressed: () {
-              ref.read(requestAnswerProvider).startStopDataCollection(stop: true);
               widget.properties['output_file'] = null;
+              ref.read(requestAnswerProvider).startStopDataCollection(stop: true);
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
           ),
