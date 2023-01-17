@@ -57,7 +57,7 @@ class RequestHandler extends ChangeNotifier {
   Mutex m = Mutex();
 
   RequestHandler(this.url, this.ref) {
-    Timer.periodic(const Duration(milliseconds: 100), updateDataSource);
+    Timer.periodic(const Duration(milliseconds: 1), updateDataSource);
   }
 
   void setParamsMap(Map params) {
@@ -243,8 +243,11 @@ class RequestHandler extends ChangeNotifier {
         });
       }
     }
-
-    headersInitialized = true;
+    if(!headersInitialized) {
+      m.acquire();
+      headersInitialized = true;
+      m.release();
+    }
     if(filename != null) { //Should write output to disk
       outputFile ??= File(filename!);
       String csv = '';
