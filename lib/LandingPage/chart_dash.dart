@@ -65,6 +65,7 @@ class RequestHandler extends ChangeNotifier {
   int cyclicIterationNumber = -1;
   Map<String, Map<String, ChartSeriesController>> chartControllers = {};
   int initializedChartControllers = 0;
+  int dataTypesCount = 0;
 
   RequestHandler(this.url, this.ref) {
     Timer.periodic(const Duration(microseconds: 10), updateDataSource);
@@ -129,6 +130,7 @@ class RequestHandler extends ChangeNotifier {
     query = '?request_type=get_data_types';
     Map data = await getDecodedData();
     dataTypes = data['data_types'];
+
     ref.read(dataTypesProvider).updateDict(dataTypes);
     return true;
   }
@@ -137,9 +139,13 @@ class RequestHandler extends ChangeNotifier {
     return checkpointDataBuffer[imu];
   }
 
-  void initBuffers() {
+  void initBuffersAndTypesCounter() {
     dataBuffer = {};
     checkpointDataBuffer = {};
+    dataTypes.forEach((key, value) {
+      dataTypesCount += value.length as int;
+    });
+
     for (var imu in imus) {
       dataBuffer[imu] = {};
       checkpointDataBuffer[imu] = {};
@@ -176,10 +182,8 @@ class RequestHandler extends ChangeNotifier {
 
     if(dataTypes.isEmpty) {
       await getDataTypes();
-      notifyListeners();
+      // notifyListeners();
     }
-
-
 
     if(query == '?request_type=set_params') {
       var body = json.encode(paramsToSet);
@@ -189,11 +193,12 @@ class RequestHandler extends ChangeNotifier {
     }
 
     if(dataBuffer.isEmpty || shouldInitBuffers) {
-      initBuffers();
+      initBuffersAndTypesCounter();
       shouldInitBuffers = false;
     }
 
-    if(stop || initializedChartControllers < imus.length) {
+    if(stop || initializedChartControllers < imus.length * dataTypesCount) {
+      // print('controller count: $initializedChartControllers, thresh: ${imus.length * dataTypesCount}');
       return;
     }
 
@@ -220,14 +225,14 @@ class RequestHandler extends ChangeNotifier {
           dataBuffer[imu][type].add(rawDataList);
           if(!ref.read(playPauseProvider).pause) {
             checkpointDataBuffer[imu][type].add(rawDataList);
-          }
-          if(dataBuffer[imu][type].q.length == bufferSize) {
-            chartControllers[imu]?[type]?.updateDataSource(
-                addedDataIndex: checkpointDataBuffer[imu][type].q.length - 1,
-                removedDataIndex: 0);
-          } else {
-            chartControllers[imu]?[type]?.updateDataSource(
-                addedDataIndex: checkpointDataBuffer[imu][type].q.length - 1);
+            if(checkpointDataBuffer[imu][type].q.length == bufferSize) {
+              chartControllers[imu]?[type]?.updateDataSource(
+                  addedDataIndex: checkpointDataBuffer[imu][type].q.length - 1,
+                  removedDataIndex: 0);
+            } else {
+              chartControllers[imu]?[type]?.updateDataSource(
+                  addedDataIndex: checkpointDataBuffer[imu][type].q.length - 1);
+            }
           }
         }
       });
@@ -365,7 +370,7 @@ final playPauseProvider = ChangeNotifierProvider((ref) {
 });
 
 final requestAnswerProvider = ChangeNotifierProvider((ref) {
-  return RequestHandler('http://127.0.0.1:5000/', ref);
+  return RequestHandler('http://127.0.0.1:8080/', ref);
 });
 
 final chosenAlgorithmProvider = ChangeNotifierProvider((ref) {
@@ -412,9 +417,9 @@ class _DataChart extends ConsumerState<DataChart> {
               yValueMapper: (dynamic rD, _) => rD
           )
       );
+      ref.read(requestAnswerProvider).increaseControllerCount();
     }
 
-    ref.read(requestAnswerProvider).increaseControllerCount();
     return SfCartesianChart(
       title: ChartTitle(
           text: widget.dataType,
@@ -464,8 +469,8 @@ class _ChartDash extends ConsumerState<ChartDash> {
     return Stack(
       alignment: Alignment.center,
       children: List.generate(tapped.length, (i) {
-        double largeChartHeight = (isShort || isNarrow ? height * 0.9 : height * 0.6);
-        double chartHeight = (isShort || isNarrow ? height * 0.1 : height * 0.4);
+        double largeChartHeight = (isShort || isNarrow ? height * 0.9 : height * 0.65);
+        double chartHeight = (isShort || isNarrow ? height * 0.1 : height * 0.35);
         double chartWidth = (isShort || isNarrow ? width * 0.2 : width / tapped.length);
         double chartLeft = tapped[i] ? 0 : (i * chartWidth);
 

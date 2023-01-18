@@ -811,13 +811,13 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
     ];
 
     Widget regularDash = Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         //mainAxisSize: MainAxisSize.min,
         children: [
           Expanded(
-            flex: 4,
+            flex: 6,
             child: chartsForDisplay,
           ),
           Expanded(
@@ -898,7 +898,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
       ),
       body: Stack(
         fit: StackFit.expand,
-        alignment: Alignment.center,
+        alignment: Alignment.topCenter,
         children: [
           const Image(
               fit: BoxFit.cover,
