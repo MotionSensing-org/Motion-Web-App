@@ -2,12 +2,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'requests.dart';
 import 'dart:convert';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'dart:async';
-import 'dart:collection';
 import 'package:csv/csv.dart';
 import 'package:mutex/mutex.dart';
 
@@ -22,13 +20,19 @@ class TextFieldClass{
   TextFieldClass({required this.controller, this.imuMac='88:6B:0F:E1:D8:68'});
 }
 
-class RawData {
-  int timeStep;
-  double value;
+class Deque {
+  List q = [];
+  int maxSize;
+  Deque({required this.maxSize});
+  void add(List l) {
+    q.addAll(l);
+    if(q.length > maxSize) {
+      q = q.skip(q.length - maxSize).toList();
+    }
+  }
 
-  RawData(this.timeStep, this.value);
-  set setTimeStep(int t) {
-    timeStep = t;
+  void clear() {
+    q.clear();
   }
 }
 
@@ -53,11 +57,21 @@ class RequestHandler extends ChangeNotifier {
   int iterationNumber = 0;
   bool headersInitialized = false;
   bool printedHeaders = false;
-  final int bufferSize = 500;
+  final int bufferSize = 300;
+  int curBufferSize = 0;
+  final int writeLength = 100;
   Mutex m = Mutex();
+  List<List> rows = [];
+  int cyclicIterationNumber = -1;
+  Map<String, Map<String, ChartSeriesController>> chartControllers = {};
+  int initializedChartControllers = 0;
 
   RequestHandler(this.url, this.ref) {
-    Timer.periodic(const Duration(milliseconds: 1), updateDataSource);
+    Timer.periodic(const Duration(microseconds: 10), updateDataSource);
+  }
+
+  void increaseControllerCount() {
+    initializedChartControllers += 1;
   }
 
   void setParamsMap(Map params) {
@@ -116,7 +130,6 @@ class RequestHandler extends ChangeNotifier {
     Map data = await getDecodedData();
     dataTypes = data['data_types'];
     ref.read(dataTypesProvider).updateDict(dataTypes);
-
     return true;
   }
 
@@ -129,26 +142,19 @@ class RequestHandler extends ChangeNotifier {
     checkpointDataBuffer = {};
     for (var imu in imus) {
       dataBuffer[imu] = {};
+      checkpointDataBuffer[imu] = {};
       dataTypes.forEach((key, value) {
         for (var type in value) {
           dataBuffer[imu][type] =
-              Queue.from([for (var i = 0; i < bufferSize; i++) RawData(i, 0)]);
+              Deque(maxSize: bufferSize);
+          checkpointDataBuffer[imu][type] =
+              Deque(maxSize: bufferSize);
         }
       });
     }
-
-    dataBuffer.forEach((imu, imuData) {
-      checkpointDataBuffer[imu] = {};
-      dataBuffer[imu].forEach((dataType, data) {
-        checkpointDataBuffer[imu][dataType] = data.toList();
-      });
-    });
   }
 
   void updateDataSource(Timer timer) async {
-    List row = [];
-    List headers = [];
-
     if(imus.isEmpty) {
       return;
     }
@@ -162,11 +168,6 @@ class RequestHandler extends ChangeNotifier {
       await getAlgParams();
       notifyListeners();
     }
-
-    // if(imus.isEmpty) {
-    //   await getImus();
-    //   notifyListeners();
-    // }
 
     if(curAlg == '') {
       await getCurAlg();
@@ -192,27 +193,18 @@ class RequestHandler extends ChangeNotifier {
       shouldInitBuffers = false;
     }
 
-    if(stop) {
+    if(stop || initializedChartControllers < imus.length) {
       return;
     }
 
     query = '?request_type=$curAlg';
-
     var data = await getData(Uri.parse(url + query));
     var decodedData = jsonDecode(data);
     for (var imu in imus) {
-      row.add(imu);
-      if(!headersInitialized) {
-        headers.add('IMU');
-      }
-
       dataTypes.forEach((key, value) async {
         for (var type in value) {
           if(decodedData[imu] == null) {
             continue;
-          }
-          if(!headersInitialized) {
-            headers.add(type);
           }
 
           var strList = decodedData[imu][type]
@@ -220,68 +212,63 @@ class RequestHandler extends ChangeNotifier {
               .replaceAll(RegExp(r'[\[\],]'), '')
               .split(' ')
               .toList();
-          var rawDataList = strList
-              .map((x) => RawData(strList.indexOf(x), double.parse(x)))
-              .toList();
-          for (int k = 0; k < rawDataList.length; k++) {
-            rawDataList[k].setTimeStep = k;
-          }
-          dataBuffer[imu][type].addAll(rawDataList);
-          row.add(strList.first);
 
-          while (dataBuffer[imu][type].length > 500) {
-            dataBuffer[imu][type].removeFirst();
+          var rawDataList = strList
+              .map((x) => double.parse(x))
+              .toList();
+
+          dataBuffer[imu][type].add(rawDataList);
+          if(!ref.read(playPauseProvider).pause) {
+            checkpointDataBuffer[imu][type].add(rawDataList);
+          }
+          if(dataBuffer[imu][type].q.length == bufferSize) {
+            chartControllers[imu]?[type]?.updateDataSource(
+                addedDataIndex: checkpointDataBuffer[imu][type].q.length - 1,
+                removedDataIndex: 0);
+          } else {
+            chartControllers[imu]?[type]?.updateDataSource(
+                addedDataIndex: checkpointDataBuffer[imu][type].q.length - 1);
           }
         }
       });
+    }
 
-      if(!ref.read(playPauseProvider).pause) {
-        dataBuffer.forEach((imu, imuData) {
-          dataBuffer[imu].forEach((dataType, data) {
-            checkpointDataBuffer[imu][dataType] = data.toList();
-          });
-        });
-      }
-    }
-    if(!headersInitialized) {
-      m.acquire();
-      headersInitialized = true;
-      m.release();
-    }
+    // cyclicIterationNumber = (cyclicIterationNumber + 1) % bufferSize;
     if(filename != null) { //Should write output to disk
-      outputFile ??= File(filename!);
-      String csv = '';
-      await m.acquire();
-      if(!printedHeaders) {
-        printedHeaders = true;
-        csv = const ListToCsvConverter().convert([headers, row]);
-      } else {
-        csv = const ListToCsvConverter().convert([row]);
-      }
-      m.release();
-      try {
-        row.clear();
-        await m.protect(() async {
-          await outputFile?.writeAsString('$csv\n', mode: FileMode.append);
-        });
-
-        // String csv = const ListToCsvConverter().convert([headers, row]);
-        // row.clear();
-        // await outputFile?.writeAsString('$csv\n');
-      } catch (e) {
-        if (kDebugMode) {
-          print(e);
-        }
-      }
-
+      await writeData();
     }
-
 
     // else {
     //   String csv = const ListToCsvConverter().convert([[row]]);
     //   outputFile?.writeAsString('$csv\n', mode: FileMode.append);
     // }
     notifyListeners();
+  }
+
+  Future writeData() async {
+    List row = [];
+    String csv = '';
+    dataBuffer.forEach((imu, types) {
+      row.add(imu);
+      types.forEach((type, dataDeque) {
+         row.add(dataDeque.q.last);
+         // print('q length: ${dataDeque.q.length}');
+      });
+    });
+
+
+
+    await m.protect(() async {
+      var outputFile = File(filename!);
+      csv = const ListToCsvConverter().convert([row]);
+      try {
+        await outputFile.writeAsString('$csv\n', mode: FileMode.append);
+      } catch (e) {
+        if (kDebugMode) {
+          print(e);
+        }
+      }
+    });
   }
 
   Future connectToIMUs(Map<String, List<TextFieldClass>> addedIMUs) async {
@@ -404,21 +391,30 @@ class _DataChart extends ConsumerState<DataChart> {
   @override
   Widget build(BuildContext context) {
     dataTypes = ref.watch(dataTypesProvider).types;
+    var controllers = ref.read(requestAnswerProvider).chartControllers;
     var rawDataSource = ref.watch(requestAnswerProvider).provideRawData(widget.imu);
     List<ChartSeries<dynamic, dynamic>> series = [];
+    if(!controllers.containsKey(widget.imu)) {
+      controllers[widget.imu] = {};
+    }
+
     for(var subType in dataTypes[widget.dataType]) {
       series.add(
           SplineSeries(
-              dataSource: rawDataSource[subType].toList(),
+              dataSource: rawDataSource[subType].q,
+              onRendererCreated: (ChartSeriesController controller) {
+                controllers[widget.imu]?[subType] = controller;
+              },
               name: subType,
               enableTooltip: true,
               animationDuration: 0,
-              xValueMapper: (dynamic rD, _) => rD.timeStep,
-              yValueMapper: (dynamic rD, _) => rD.value
+              xValueMapper: (dynamic rD, int index) => index,
+              yValueMapper: (dynamic rD, _) => rD
           )
       );
     }
 
+    ref.read(requestAnswerProvider).increaseControllerCount();
     return SfCartesianChart(
       title: ChartTitle(
           text: widget.dataType,

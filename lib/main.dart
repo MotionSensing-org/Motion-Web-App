@@ -1,9 +1,13 @@
 import 'dart:ui';
+import 'package:csv/csv.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:iot_project/LandingPage/chart_dash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'LandingPage/imus_route.dart';
+import 'dart:io';
+
 
 
 void main() {
@@ -1122,6 +1126,29 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                                   ref.read(requestAnswerProvider).setQuery('set_params');
                                   ref.read(requestAnswerProvider).setParamsMap(widget.properties);
                                   ref.read(requestAnswerProvider).filename = widget.properties['output_file'];
+                                  if(widget.properties['output_file'] != null) {
+                                    if(!File(widget.properties['output_file']).existsSync()) {
+                                      var outputFile = File(widget.properties['output_file']!!);
+                                      List headers = [];
+                                      List imus = ref.watch(imusListProvider).imus;
+                                      var types = ref.watch(dataTypesProvider).types;
+                                      for(int i = 0; i < imus.length; i++) {
+                                        headers.add('IMU');
+                                        types.forEach((key, value) {
+                                          headers.addAll(value);
+                                        });
+                                      }
+
+                                      String csv = const ListToCsvConverter().convert([headers]);
+                                      try {
+                                        outputFile.writeAsStringSync('$csv\n', mode: FileMode.append);
+                                      } catch (e) {
+                                        if (kDebugMode) {
+                                          print(e);
+                                        }
+                                      }
+                                    }
+                                  }
                                   ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
                                   Navigator.of(context).pushNamed('chart_dash_route');
                                 }),
