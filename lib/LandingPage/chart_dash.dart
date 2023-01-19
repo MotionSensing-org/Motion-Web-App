@@ -8,6 +8,7 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import 'dart:async';
 import 'package:csv/csv.dart';
 import 'package:mutex/mutex.dart';
+import 'dart:core';
 
 const narrowWidth = 650;
 const shortHeight = 650;
@@ -57,7 +58,7 @@ class RequestHandler extends ChangeNotifier {
   int iterationNumber = 0;
   bool headersInitialized = false;
   bool printedHeaders = false;
-  final int bufferSize = 300;
+  final int bufferSize = 500;
   int curBufferSize = 0;
   final int writeLength = 100;
   Mutex m = Mutex();
@@ -66,9 +67,10 @@ class RequestHandler extends ChangeNotifier {
   Map<String, Map<String, ChartSeriesController>> chartControllers = {};
   int initializedChartControllers = 0;
   int dataTypesCount = 0;
+  final stopWatch = Stopwatch();
 
   RequestHandler(this.url, this.ref) {
-    Timer.periodic(const Duration(microseconds: 10), updateDataSource);
+    Timer.periodic(const Duration(milliseconds: 10), updateDataSource);
   }
 
   void increaseControllerCount() {
@@ -198,12 +200,18 @@ class RequestHandler extends ChangeNotifier {
     }
 
     if(stop || initializedChartControllers < imus.length * dataTypesCount) {
+      stopWatch.stop();
+      stopWatch.reset();
       // print('controller count: $initializedChartControllers, thresh: ${imus.length * dataTypesCount}');
       return;
     }
 
     query = '?request_type=$curAlg';
     var data = await getData(Uri.parse(url + query));
+    if(!stopWatch.isRunning) {
+      stopWatch.start();
+    }
+
     var decodedData = jsonDecode(data);
     for (var imu in imus) {
       dataTypes.forEach((key, value) async {
@@ -251,6 +259,10 @@ class RequestHandler extends ChangeNotifier {
   }
 
   Future writeData() async {
+    if(stop) {
+      return;
+    }
+
     List row = [];
     String csv = '';
     dataBuffer.forEach((imu, types) {
@@ -259,6 +271,7 @@ class RequestHandler extends ChangeNotifier {
          row.add(dataDeque.q.last);
          // print('q length: ${dataDeque.q.length}');
       });
+      row.add(stopWatch.elapsedMilliseconds / 1000);
     });
 
 
@@ -405,7 +418,7 @@ class _DataChart extends ConsumerState<DataChart> {
 
     for(var subType in dataTypes[widget.dataType]) {
       series.add(
-          SplineSeries(
+          FastLineSeries(
               dataSource: rawDataSource[subType].q,
               onRendererCreated: (ChartSeriesController controller) {
                 controllers[widget.imu]?[subType] = controller;

@@ -1138,6 +1138,7 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                                           headers.addAll(value);
                                         });
                                       }
+                                      headers.add('Time [sec]');
 
                                       String csv = const ListToCsvConverter().convert([headers]);
                                       try {
