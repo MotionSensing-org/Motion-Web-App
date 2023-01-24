@@ -145,12 +145,36 @@ class _IMUsRoute extends ConsumerState<IMUsRoute> {
                                   color: Theme.of(context).cardColor,
                                   borderRadius: const BorderRadius.all(Radius.circular(10))
                               ),
-                              child: const Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Text(
-                                  'Failed to connect to IMUs',
-                                  style: TextStyle(color: Colors.red),
-                                ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text(
+                                      'Failed to connect to IMUs - check that you entered the server address correctly',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                          color: Theme.of(context).cardColor,
+                                          borderRadius: const BorderRadius.all(Radius.circular(10))
+                                      ),
+                                      child: TextButton(
+                                          onPressed: () {
+                                            ref.read(requestAnswerProvider).connectionSuccessful(false);
+                                            Navigator.pop(context);
+                                          },
+                                          child: const Text(
+                                            'Back',
+                                            style: TextStyle(color: Colors.grey),
+                                          )
+                                      ),
+                                    ),
+                                  )
+                                ],
                               ),
                             ),
                           ),
@@ -201,7 +225,7 @@ class _IMUsRoute extends ConsumerState<IMUsRoute> {
                                         ),
                                         child: TextButton(
                                             onPressed: () {
-                                              // ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
+                                              ref.read(requestAnswerProvider).connectionSuccessful(true);
                                               Navigator.pop(context);
                                             },
                                             child: const Text(

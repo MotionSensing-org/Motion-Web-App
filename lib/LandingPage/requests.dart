@@ -1,6 +1,6 @@
 import 'package:http/http.dart';
 
-Future setParams(url, body) async {
+Future setServerParams(url, body) async {
   Response response = await post(url,
       headers: {"Content-Type": "application/json"},
       body: body);

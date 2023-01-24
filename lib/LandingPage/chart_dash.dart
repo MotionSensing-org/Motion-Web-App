@@ -58,6 +58,7 @@ class RequestHandler extends ChangeNotifier {
   int iterationNumber = 0;
   bool headersInitialized = false;
   bool printedHeaders = false;
+  bool connectionSuccess = false;
   final int bufferSize = 500;
   int curBufferSize = 0;
   final int writeLength = 100;
@@ -70,7 +71,19 @@ class RequestHandler extends ChangeNotifier {
   final stopWatch = Stopwatch();
 
   RequestHandler(this.url, this.ref) {
-    Timer.periodic(const Duration(milliseconds: 10), updateDataSource);
+    Timer.periodic(const Duration(milliseconds: 50), updateDataSource);
+  }
+
+  void setServerAddress(String serverAddress) {
+    url = serverAddress;
+  }
+
+  void connectionSuccessful(bool success) {
+    connectionSuccess = success;
+  }
+
+  bool isConnected() {
+    return connectionSuccess;
   }
 
   void increaseControllerCount() {
@@ -162,6 +175,13 @@ class RequestHandler extends ChangeNotifier {
     }
   }
 
+  Future setCurAlg() async {
+    var body = json.encode(ref.read(chosenAlgorithmProvider).chosenAlg);
+    await setServerParams(Uri.parse('${url}?request_type=set_cur_alg'), body);
+    // setQuery(curAlg);
+    return;
+  }
+
   void updateDataSource(Timer timer) async {
     if(imus.isEmpty) {
       return;
@@ -189,7 +209,7 @@ class RequestHandler extends ChangeNotifier {
 
     if(query == '?request_type=set_params') {
       var body = json.encode(paramsToSet);
-      await setParams(Uri.parse(url+query), body);
+      await setServerParams(Uri.parse(url+query), body);
       setQuery(curAlg);
       return;
     }
@@ -236,11 +256,13 @@ class RequestHandler extends ChangeNotifier {
             if(checkpointDataBuffer[imu][type].q.length == bufferSize) {
               chartControllers[imu]?[type]?.updateDataSource(
                   addedDataIndex: checkpointDataBuffer[imu][type].q.length - 1,
+                  updatedDataIndexes: List.generate(checkpointDataBuffer[imu][type].q.length - 2, (index) => index + 1),
                   removedDataIndex: 0);
-            } else {
-              chartControllers[imu]?[type]?.updateDataSource(
-                  addedDataIndex: checkpointDataBuffer[imu][type].q.length - 1);
             }
+            // else {
+            //   chartControllers[imu]?[type]?.updateDataSource(
+            //       addedDataIndex: checkpointDataBuffer[imu][type].q.length - 1);
+            // }
           }
         }
       });
@@ -297,7 +319,8 @@ class RequestHandler extends ChangeNotifier {
     // imus = addedIMUSStrings['imus']!;
     var body = json.encode(addedIMUSStrings);
     // var body = json.encode({'imus': ['8889989'], 'feedbacks': []});
-    return await setParams(Uri.parse('$url?request_type=set_imus'), body);
+    print('server url: $url');
+    return await setServerParams(Uri.parse('$url?request_type=set_imus'), body);
   }
 }
 
@@ -341,6 +364,7 @@ class IMUsCounter extends ChangeNotifier {
   int imuCount = 0;
   void inc() {
     imuCount += 1;
+    print('imu count: $imuCount');
     notifyListeners();
   }
 

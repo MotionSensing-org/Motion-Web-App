@@ -73,6 +73,13 @@ class MyApp extends ConsumerWidget {
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
         // primarySwatch: Colors.green,
+        inputDecorationTheme: const InputDecorationTheme(
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(
+              color: Colors.transparent
+            )
+          )
+        ),
         expansionTileTheme: ExpansionTileThemeData(
           iconColor: Colors.blue.shade700,
           collapsedIconColor: Colors.white,
@@ -138,83 +145,90 @@ class _AlgParams extends ConsumerState<AlgParams>{
     }
 
     params.add(
-        Text(
-          outputFileForDisplay.split('\\').last,
-          style: Theme.of(context).textTheme.bodyText1,
-        )
-    );
-    params.add(
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Flexible(
-              fit: FlexFit.loose,
-              child: Card(
-                color: Colors.white,
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                elevation: Theme.of(context).cardTheme.elevation,
-                child: TextButton(
-                  child: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      'Select output file',
-                      style: TextStyle(
-                          color: Colors.grey
+        Container(
+          decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.4),
+              borderRadius: const BorderRadius.all(Radius.circular(20))
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Visibility(
+                  visible: outputFileForDisplay.isNotEmpty,
+                  child: Text(
+                    outputFileForDisplay.split('\\').last,
+                    style: Theme.of(context).textTheme.bodyText1,
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: TextButton(
+                        child: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Select output file',
+                            style: TextStyle(
+                                color: Colors.white
+                            ),
+                          ),
+                        ),
+                        onPressed: () async {
+                          final DateTime now = DateTime.now();
+                          String? outputFile = await FilePicker.platform.saveFile(
+                              dialogTitle: 'Please select an output file:',
+                              fileName: '${now.year}-${now.month}-${now.day}--${now.hour}-${now.minute}-${now.second}',
+                              allowedExtensions: ['csv'],
+                              type: FileType.custom
+                          );
+
+                          if (outputFile != null) {
+                            if(!outputFile.contains('.csv')) {
+                              outputFile += '.csv';
+                            }
+                          } //User cancelled the file picker
+
+                          widget.properties['output_file'] = outputFile;
+                          setState(() {
+                            if(widget.properties['output_file'] != null){
+                              outputFileForDisplay = widget.properties['output_file'];
+                            }
+                          });
+                        },
                       ),
                     ),
-                  ),
-                  onPressed: () async {
-                    final DateTime now = DateTime.now();
-                    String? outputFile = await FilePicker.platform.saveFile(
-                        dialogTitle: 'Please select an output file:',
-                        fileName: '${now.year}-${now.month}-${now.day}--${now.hour}-${now.minute}-${now.second}',
-                        allowedExtensions: ['csv'],
-                        type: FileType.custom
-                    );
-
-                    if (outputFile != null) {
-                      if(!outputFile.contains('.csv')) {
-                        outputFile += '.csv';
-                      }
-                    } //User cancelled the file picker
-
-                    widget.properties['output_file'] = outputFile;
-                    setState(() {
-                      if(widget.properties['output_file'] != null){
-                        outputFileForDisplay = widget.properties['output_file'];
-                      }
-                    });
-                  },
-                ),
-              ),
-            ),
-            Flexible(
-              fit: FlexFit.loose,
-              child: Card(
-                color: Colors.white,
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                elevation: Theme.of(context).cardTheme.elevation,
-                child: TextButton(
-                  child: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      'Clear',
-                      style: TextStyle(
-                          color: Colors.grey
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: Visibility(
+                        visible: outputFileForDisplay.isNotEmpty,
+                        child: TextButton(
+                          child: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Clear',
+                              style: TextStyle(
+                                  color: Colors.white
+                              ),
+                            ),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              widget.properties['output_file'] = null;
+                              outputFileForDisplay = '';
+                            });
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      widget.properties['output_file'] = null;
-                      outputFileForDisplay = '';
-                    });
-                  },
+                  ],
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         )
     );
 
@@ -229,19 +243,29 @@ class _AlgParams extends ConsumerState<AlgParams>{
             widthFactor: 0.6,
             child: Tooltip(
               message: curAlgParams[i]['param_name'],
-              child: Card(
-                color: Colors.white,
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
-                elevation: Theme.of(context).cardTheme.elevation,
+              child: Container(
+                decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.4),
+                    borderRadius: const BorderRadius.all(Radius.circular(4))
+                ),
                 child: TextField(
+                  style: const TextStyle(
+                    color: Colors.white
+                  ),
                   textAlign: TextAlign.center,
                   onChanged: (value){
                     widget.properties[curAlgParams[i]['param_name']] = value;
                   },
                   decoration: InputDecoration(
+                    labelStyle: const TextStyle(
+                      color: Colors.white
+                    ),
+                    hintStyle: const TextStyle(
+                      color: Colors.white
+                    ),
                     labelText: curAlgParams[i]['param_name'],
                     border: const OutlineInputBorder(),
-                    hintText: 'Enter a value. default: ${curAlgParams[i]['default_value']}',
+                    hintText: 'Enter a value. Default: ${curAlgParams[i]['default_value']}',
                   ),
                 ),
               ),
@@ -257,44 +281,56 @@ class _AlgParams extends ConsumerState<AlgParams>{
             }
 
             params.add(
-              Column(
-                children: [
-                  Text(
-                    curAlgParams[i]['param_name'],
-                    style: Theme.of(context).textTheme.bodyText1,
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      borderRadius: const BorderRadius.all(Radius.circular(20))
                   ),
-                  Padding(
+                  child: Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: DropdownButton(
-                          items: [for(int k = 0; k < values.length; k++) DropdownMenuItem<String>(
-                            value: values[k],
-                            child: Text(values[k]),
-                          )],
-                          dropdownColor: Colors.grey.shade100.withOpacity(0.6),
-                          icon: const Icon(
-                            Icons.arrow_downward,
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(
-                                  blurRadius: 5,
-                                  color: Colors.grey
-                              )
-                            ]
-                          ),
-                          value: dropdownValue,
+                    child: Column(
+                      children: [
+                        Text(
+                          curAlgParams[i]['param_name'],
                           style: Theme.of(context).textTheme.bodyText1,
-                          onChanged: (String? value) {
-                            setState(() {
-                              dropdownValue = value;
-                              widget.properties[curAlgParams[i]['param_name']] = dropdownValue;
-                            });
-                          }
-                      ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: DropdownButton(
+                                items: [for(int k = 0; k < values.length; k++) DropdownMenuItem<String>(
+                                  value: values[k],
+                                  child: Text(values[k]),
+                                )],
+                                dropdownColor: Colors.grey.shade100.withOpacity(0.6),
+                                icon: const Icon(
+                                  Icons.arrow_downward,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                        blurRadius: 5,
+                                        color: Colors.grey
+                                    )
+                                  ]
+                                ),
+                                value: dropdownValue,
+                                style: Theme.of(context).textTheme.bodyText1,
+                                onChanged: (String? value) {
+                                  setState(() {
+                                    dropdownValue = value;
+                                    widget.properties[curAlgParams[i]['param_name']] = dropdownValue;
+                                  });
+                                }
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             );
           }
@@ -350,59 +386,73 @@ class _DashControl extends ConsumerState<DashControl> {
           shrinkWrap: true,
           scrollDirection: Axis.vertical,
           children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                      'Please choose an algorithm:',
-                    style: Theme.of(context).textTheme.bodyText1,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: DropdownButton(
-                          items: algorithmsList,
-                          dropdownColor: Colors.grey.shade100.withOpacity(0.6),
-                          icon: const Icon(
-                            Icons.arrow_downward,
-                            color: Colors.white,
-                              shadows: [
-                              Shadow(
-                                  blurRadius: 5,
-                                  color: Colors.grey
-                              )
-                            ]
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        borderRadius: const BorderRadius.all(Radius.circular(20))
+                    ),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            'Please choose an algorithm:',
+                            style: Theme.of(context).textTheme.bodyText1,
                           ),
-                          value: dropdownValue,
-                          style: Theme.of(context).textTheme.bodyText1,
-                          onChanged: (String? value) {
-                            setState(() {
-                              dropdownValue = value;
-                              widget.properties['alg_name'] = value;
-                              ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
-                            });
-                          }
-                      ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: DropdownButton(
+                                  items: algorithmsList,
+                                  dropdownColor: Colors.grey.shade100.withOpacity(0.6),
+                                  icon: const Icon(
+                                      Icons.arrow_downward,
+                                      color: Colors.white,
+                                      shadows: [
+                                        Shadow(
+                                            blurRadius: 5,
+                                            color: Colors.grey
+                                        )
+                                      ]
+                                  ),
+                                  value: dropdownValue,
+                                  style: Theme.of(context).textTheme.bodyText1,
+                                  onChanged: (String? value) {
+                                    setState(() {
+                                      dropdownValue = value;
+                                      widget.properties['alg_name'] = value;
+                                      ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
+                                      ref.read(requestAnswerProvider).setCurAlg();
+                                    });
+                                  }
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                AnimatedCrossFade(
-                    crossFadeState: chosenAlgorithm == '' ? CrossFadeState.showFirst
-                        : CrossFadeState.showSecond,
-                    duration: const Duration(milliseconds: 300),
-                    firstChild: const SizedBox.shrink(),
-                    secondChild: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: AlgParams(properties: widget.properties,),
-                    )
-                )
-              ],
+                  AnimatedCrossFade(
+                      crossFadeState: chosenAlgorithm == '' ? CrossFadeState.showFirst
+                          : CrossFadeState.showSecond,
+                      duration: const Duration(milliseconds: 300),
+                      firstChild: const SizedBox.shrink(),
+                      secondChild: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: AlgParams(properties: widget.properties,),
+                      )
+                  )
+                ],
+              ),
             ),
           ],
         ),
@@ -943,23 +993,30 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
   bool canContinue = true;
   double forwardSize = 60;
   double backwardSize = 60;
+  String serverUrl = '';
+  final serverInputController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     int imusNumber = ref.watch(imusCounter).imuCount;
+    bool connectedToIMUs = ref.read(requestAnswerProvider).isConnected();
     String chosenAlg = ref.watch(chosenAlgorithmProvider).chosenAlg;
-
-    if(animatedStackIndex == 1) {
-      canContinue = imusNumber > 0;
-    } else if(animatedStackIndex == 2) {
+    if(animatedStackIndex == 2) {
+      canContinue = imusNumber > 0 && connectedToIMUs;
+    } else if(animatedStackIndex == 3) {
       canContinue = chosenAlg.isNotEmpty;
+    } else {
+      canContinue = true;
     }
 
     if(animatedStackChildren.isEmpty) {
       animatedStackChildren = [
         const Padding(
           padding: EdgeInsets.all(8.0),
-          child: Image(image: AssetImage('assets/images/logo_round.png')),
+          child: FractionallySizedBox(
+            heightFactor: 0.5,
+              alignment: Alignment.center,
+              child: Image(image: AssetImage('assets/images/logo_round.png'))),
         ),
         FractionallySizedBox(
           widthFactor: 0.6,
@@ -972,23 +1029,124 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                     color: Theme.of(context).cardColor,
                     borderRadius: const BorderRadius.all(Radius.circular(10))
                 ),
-                child: ListView(
-                  shrinkWrap: true,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    ExpansionTile(
-                      title: const Text('Add IMUs',),
-                      children: [
-                        IMUList(addedIMUs: widget.addedIMUs['imus']!,),
-                      ],
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text(
+                          'Please insert server address:',
+                          style: TextStyle(
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                    blurRadius: 5,
+                                    color: Colors.grey
+                                )
+                              ]
+                          )
+                      ),
                     ),
-                    ExpansionTile(
-                      title: const Text('Add Feedback sensors',),
-                      children: [
-                        IMUList(isFeedbackList: true, addedIMUs: widget.addedIMUs['feedbacks']!,),
-                      ],
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: FractionallySizedBox(
+                        widthFactor: 0.7,
+                        child: TextFormField(
+                          style: Theme.of(context).textTheme.bodyText1,
+                          textAlign: TextAlign.center,
+                          controller: serverInputController..text = 'http://127.0.0.1:5000',
+                          onFieldSubmitted: (value) {
+                            // serverUrl = value;
+                            serverInputController.text = value;
+                          },
+                        ),
+                      ),
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+        ),
+        FractionallySizedBox(
+          widthFactor: 0.6,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: const BorderRadius.all(Radius.circular(10))
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          ExpansionTile(
+                            title: const Text('Add IMUs',),
+                            children: [
+                              IMUList(addedIMUs: widget.addedIMUs['imus']!,),
+                            ],
+                          ),
+                          ExpansionTile(
+                            title: const Text('Add Feedback sensors',),
+                            children: [
+                              IMUList(isFeedbackList: true, addedIMUs: widget.addedIMUs['feedbacks']!,),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: FloatingActionButton(
+                            heroTag: 'Connect to IMUs',
+                            backgroundColor: Colors.black.withOpacity(0.4),
+                            child: const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Text(
+                                  'Connect',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ),
+                            onPressed: () async {
+                              if(ref.watch(imusCounter).imuCount == 0) {
+                                showDialog(
+                                    context: context,
+                                    builder: (context) => BackdropFilter(
+                                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                        child: AlertDialog(
+                                          content: Text(
+                                            'IMU list cannot be empty',
+                                            style: Theme.of(context).textTheme.bodyText1,
+                                          ),
+                                        )
+                                    )
+                                );
+                                return;
+                              }
+
+                              await Navigator.of(context).pushNamed('imus_route');
+                              setState(() {});
+                            }
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+
               ),
             ),
           ),
@@ -1014,17 +1172,19 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
           ),
           Center(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              // mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Flexible(
-                  fit: FlexFit.loose,
+                Expanded(
+                  // fit: FlexFit.loose,
+                  flex: 4,
                   child: AnimatedIndexedStack(
                       index: animatedStackIndex,
                       children: animatedStackChildren
                   ),
                 ),
                 Flexible(
+                  flex: 1,
                   fit: FlexFit.loose,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1085,25 +1245,13 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                             child: IconButton(
                                 onPressed: () => setState(() {
                                   forwardSize = 70;
-                                  if(!canContinue && animatedStackIndex == 1) {
-                                    showDialog(
-                                        context: context,
-                                        builder: (context) => BackdropFilter(
-                                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                            child: AlertDialog(
-                                              content: Text(
-                                                'IMU list cannot be empty',
-                                                style: Theme.of(context).textTheme.bodyText1,
-                                              ),
-                                            )
-                                        )
-                                    );
+                                  if(!canContinue) {
                                     return;
-                                  } else if(animatedStackIndex == 1) {
-                                    animatedStackIndex += 1;
-                                    Navigator.of(context).pushNamed('imus_route');
+                                  } else if(animatedStackIndex == 2
+                                      && !ref.read(requestAnswerProvider).isConnected()) {
+                                    // animatedStackIndex += 1
                                     return;
-                                  } else if(!canContinue && animatedStackIndex == 2) {
+                                  } else if(!canContinue && animatedStackIndex == 3) {
                                     showDialog(
                                         context: context,
                                         builder: (context) => BackdropFilter(
@@ -1118,6 +1266,10 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                                     );
                                     return;
                                   } else if(animatedStackIndex < animatedStackChildren.length - 1) {
+                                    if(animatedStackIndex == 1) {
+                                      ref.read(requestAnswerProvider).setServerAddress(serverInputController.text);
+                                    }
+
                                     animatedStackIndex += 1;
                                     return;
                                   }
