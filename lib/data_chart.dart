@@ -38,14 +38,17 @@ class BaseDataChart extends StatefulWidget {
 
 class _BaseDataChartState extends State<BaseDataChart> {
   List<Color> lineColors = [
+    Colors.white,
+    Colors.blue.shade300,
+    Colors.green.shade300,
+    Colors.yellow.shade300,
+    Colors.purple.shade300,
+    Colors.red.shade300,
+    Colors.pink.shade300,
+    Colors.brown.shade300,
+    Colors.grey.shade300,
     Colors.black,
-    Colors.blue,
-    Colors.green,
-    Colors.yellow,
-    Colors.red,
-    Colors.grey
   ];
-  Color lineColor = Colors.grey;
   late List<bool> showLines;
   List<LineChartBarData> lineBarsData = [];
   bool shouldAssignLineColors = true;
@@ -76,17 +79,26 @@ class _BaseDataChartState extends State<BaseDataChart> {
         yAxisValues.add(widget.linesData[i]);
       }
     }
+    var minY  =listMin(List.generate(yAxisValues.length, (index) {
+      return listMin(yAxisValues[index]);
+    }));
+    var maxY = listMax(List.generate(yAxisValues.length, (index) {
+      return listMax(yAxisValues[index]);
+    }));
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      // mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Flexible(
-            flex: 1,
+            flex: 2,
             fit: FlexFit.loose,
-            child: Text(
-              widget.title,
-              style: const TextStyle(color: Colors.black),
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Text(
+                widget.title,
+                style: const TextStyle(color: Colors.white),
+              ),
             )
         ),
         Expanded(
@@ -94,20 +106,42 @@ class _BaseDataChartState extends State<BaseDataChart> {
           child: InteractiveViewer(
             minScale: 1.0,
             maxScale: 10.0,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: LineChart(
-                LineChartData(
-                  minY: listMin(List.generate(yAxisValues.length, (index) {
-                    return listMin(yAxisValues[index]);
-                  })),
-                  maxY: listMax(List.generate(yAxisValues.length, (index) {
-                    return listMax(yAxisValues[index]);
-                  })),
-                  lineBarsData: lineBarsData,
+            child: LineChart(
+              LineChartData(
+                titlesData: FlTitlesData(
+                  show: true,
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false,)),
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false,)),
+                  leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        // interval: (maxY-minY) / 10,
+                        reservedSize: 60,
+                          showTitles: true,
+                          getTitlesWidget: (double val, TitleMeta t) {
+                            return Tooltip(
+                                message: val.toStringAsFixed(3),
+                                child: Text(
+                                  val.toStringAsFixed(3),
+                                  style: const TextStyle(color: Colors.white),
+                                )
+                            );
+                          }
+                      )
+                  ),
+                  bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (double val, _) {
+                          return FittedBox(fit: BoxFit.scaleDown, child: Text(val.toInt().toString(), style: const TextStyle(color: Colors.white),));
+                        }
+                      )
+                  )
                 ),
-                swapAnimationDuration: const Duration(milliseconds: 2),
+                minY: minY,
+                maxY: maxY,
+                lineBarsData: lineBarsData,
               ),
+              swapAnimationDuration: const Duration(milliseconds: 2),
             ),
           ),
         ),
@@ -143,7 +177,7 @@ class _BaseDataChartState extends State<BaseDataChart> {
                                 fit: FlexFit.loose,
                                 child: Text(
                                   widget.labels[index],
-                                  style: const TextStyle(color: Colors.black),
+                                  style: const TextStyle(color: Colors.white),
                                 )
                             ),
                             Flexible(

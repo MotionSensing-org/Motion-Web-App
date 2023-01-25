@@ -122,7 +122,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
                 ),
               ),
               secondChild: Card(
-                color: Colors.white,
+                color: Colors.black.withOpacity(0.7),
                 shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),

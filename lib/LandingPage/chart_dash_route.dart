@@ -70,7 +70,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
 
     displayItems.addAll([
       Card(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withOpacity(0.5),
         elevation: Theme.of(context).cardTheme.elevation,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
         child: Column(
@@ -169,7 +169,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                               child: AnimatedContainer(
                                 duration:  const Duration(milliseconds: 500),
                                 decoration: BoxDecoration(
-                                    color: (chosenIMUIndex == index) ? Colors.white : Colors.white.withOpacity(0.5),
+                                    color: (chosenIMUIndex == index) ? Colors.black.withOpacity(0.7) : Colors.black.withOpacity(0.5),
                                     borderRadius: const BorderRadius.all(Radius.circular(20))
                                 ),
                                 child: Center(
@@ -243,7 +243,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                         width: controlButtonSizes[0],
                         height: controlButtonSizes[0],
                         duration:  const Duration(milliseconds: 100),
-                        color: Colors.black.withOpacity(0.4),
+                        color: Colors.black.withOpacity(0.7),
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: IconButton(
@@ -282,7 +282,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                     width: controlButtonSizes[1],
                     height: controlButtonSizes[1],
                     duration:  const Duration(milliseconds: 100),
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withOpacity(0.7),
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: IconButton(
@@ -317,7 +317,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                   width: controlButtonSizes[2],
                   height: controlButtonSizes[2],
                   duration:  const Duration(milliseconds: 100),
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withOpacity(0.7),
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: IconButton(

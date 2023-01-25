@@ -149,7 +149,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
     params.add(
         Container(
           decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withOpacity(0.6),
               borderRadius: const BorderRadius.all(Radius.circular(20))
           ),
           child: Padding(
@@ -247,7 +247,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
               message: curAlgParams[i]['param_name'],
               child: Container(
                 decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withOpacity(0.6),
                     borderRadius: const BorderRadius.all(Radius.circular(4))
                 ),
                 child: TextField(
@@ -287,7 +287,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
                 padding: const EdgeInsets.all(8.0),
                 child: Container(
                   decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withOpacity(0.6),
                       borderRadius: const BorderRadius.all(Radius.circular(20))
                   ),
                   child: Padding(
@@ -395,7 +395,7 @@ class _DashControl extends ConsumerState<DashControl> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
+                        color: Colors.black.withOpacity(0.6),
                         borderRadius: const BorderRadius.all(Radius.circular(20))
                     ),
                     child: Column(
@@ -596,7 +596,7 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                         padding: const EdgeInsets.all(8.0),
                         child: FloatingActionButton(
                             heroTag: 'Connect to IMUs',
-                            backgroundColor: Colors.black.withOpacity(0.4),
+                            backgroundColor: Colors.black.withOpacity(0.6),
                             child: const FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Padding(
