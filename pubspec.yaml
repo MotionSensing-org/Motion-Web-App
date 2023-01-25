@@ -37,7 +37,6 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   http: ^0.13.5
-  syncfusion_flutter_charts: ^20.3.59
   riverpod: ^2.1.1
   flutter_riverpod: ^2.1.1
   csv: ^5.0.1
@@ -47,6 +46,7 @@ dependencies:
   flutter_slidable: ^2.0.0
   animations: ^2.0.7
   mutex: ^3.0.1
+  fl_chart: ^0.55.2
 
 dev_dependencies:
   flutter_test:

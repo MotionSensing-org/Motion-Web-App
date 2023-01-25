@@ -3,9 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
-
-import 'chart_dash.dart';
-
+import 'package:iot_project/LandingPage/providers.dart';
 
 //ignore: must_be_immutable
 class IMUList extends ConsumerStatefulWidget {
@@ -118,6 +116,14 @@ class IMUsRoute extends ConsumerStatefulWidget{
 }
 
 class _IMUsRoute extends ConsumerState<IMUsRoute> {
+  final stopwatch = Stopwatch();
+
+  @override
+  void initState() {
+    stopwatch.start();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -135,7 +141,7 @@ class _IMUsRoute extends ConsumerState<IMUsRoute> {
                 return FutureBuilder(
                     future: ref.read(requestAnswerProvider).connectToIMUs(widget.addedIMUs),
                     builder: (BuildContext context, AsyncSnapshot snapshot){
-                      if(snapshot.hasError) {
+                      if(snapshot.hasError || stopwatch.elapsedMilliseconds > 20000) {
                         return ClipRRect(
                           borderRadius: const BorderRadius.all(Radius.circular(10)),
                           child: BackdropFilter(
@@ -151,7 +157,7 @@ class _IMUsRoute extends ConsumerState<IMUsRoute> {
                                   const Padding(
                                     padding: EdgeInsets.all(8.0),
                                     child: Text(
-                                      'Failed to connect to IMUs - check that you entered the server address correctly',
+                                      'Failed to connect to IMUs',
                                       style: TextStyle(color: Colors.red),
                                     ),
                                   ),
