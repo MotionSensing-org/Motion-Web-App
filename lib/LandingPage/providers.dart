@@ -250,25 +250,11 @@ class RequestHandler extends ChangeNotifier {
           dataBuffer[imu][type].add(rawDataList);
           if(!ref.read(playPauseProvider).pause) {
             checkpointDataBuffer[imu][type].add(rawDataList);
-            // if(checkpointDataBuffer[imu][type].q.length == bufferSize) {
-            //   if(chartControllers[imu]?[type] != null) {
-            //     chartControllers[imu]?[type]?.updateDataSource(
-            //         addedDataIndex: checkpointDataBuffer[imu][type].q.length - 1,
-            //         updatedDataIndexes: List.generate(checkpointDataBuffer[imu][type].q.length - 2, (index) => index + 1),
-            //         removedDataIndex: 0);
-            //   }
-            //
-            // }
-            // else {
-            //   chartControllers[imu]?[type]?.updateDataSource(
-            //       addedDataIndex: checkpointDataBuffer[imu][type].q.length - 1);
-            // }
           }
         }
       });
     }
 
-    // cyclicIterationNumber = (cyclicIterationNumber + 1) % bufferSize;
     if(filename != null) { //Should write output to disk
       await writeData();
     }
@@ -293,10 +279,8 @@ class RequestHandler extends ChangeNotifier {
         row.add(dataDeque.q.last);
         // print('q length: ${dataDeque.q.length}');
       });
-      row.add(stopWatch.elapsedMilliseconds / 1000);
     });
-
-
+    row.add(stopWatch.elapsedMilliseconds / 1000);
 
     await m.protect(() async {
       var outputFile = File(filename!);
