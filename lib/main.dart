@@ -363,6 +363,7 @@ class _DashControl extends ConsumerState<DashControl> {
 
   @override
   Widget build(BuildContext context) {
+    print('dash control');
     String chosenAlgorithm = ref.watch(chosenAlgorithmProvider).chosenAlg;
     algorithms = ref.watch(requestAnswerProvider).algorithms;
     List<DropdownMenuItem<String>> algorithmsList = [for(int i = 0; i < algorithms.length; i++) DropdownMenuItem<String>(

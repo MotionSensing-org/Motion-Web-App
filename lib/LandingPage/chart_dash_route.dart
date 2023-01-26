@@ -124,7 +124,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                             Positioned(
                               child: Icon(
                                 Icons.show_chart,
-                                color: Colors.white,
+                                color: Colors.black.withOpacity(0.3),
                                 size: constraints.maxWidth
                                     / (isShort || isNarrow ? 4 : 10),
                               ),

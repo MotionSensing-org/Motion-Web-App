@@ -99,34 +99,40 @@ class _ChartDash extends ConsumerState<ChartDash> {
               firstChild: Tooltip(
                 message: types[i],
                 child: Card(
-                  color: Colors.white,
+                  color: Colors.black.withOpacity(0.7),
                   shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
                   child: Center(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.all(2.0),
-                            child: Icon(Icons.show_chart_rounded),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(2.0),
-                            child: Text(types[i]),
-                          ),
-                        ],
+                      child: Padding(
+                        padding: const EdgeInsets.all(2.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.all(2.0),
+                              child: Icon(Icons.show_chart_rounded ,color: Colors.white,),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(2.0),
+                              child: Text(types[i], style: const TextStyle(color: Colors.white),),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-              secondChild: Card(
-                color: Colors.black.withOpacity(0.7),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key)),
+              secondChild: Visibility(
+                visible: (!isNarrow && !isShort) || tapped[i],
+                child: Card(
+                  color: Colors.black.withOpacity(0.7),
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: DataChart(imu: widget.imu, dataType: types[i], key: ValueKey(_key)),
+                  ),
                 ),
               ),
               duration: const Duration(milliseconds: 500),
