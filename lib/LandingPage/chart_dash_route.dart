@@ -5,6 +5,7 @@ import 'package:iot_project/LandingPage/providers.dart';
 import 'animated_indexed_stack.dart';
 import 'chart_dash.dart';
 
+//ignore: must_be_immutable
 class ChartDashRoute extends ConsumerStatefulWidget{
   Map properties;
   ChartDashRoute({Key? key, required this.properties}) : super(key: key);
@@ -95,8 +96,8 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
             ),
             onPressed: () {
               widget.properties['output_file'] = null;
-              ref.read(requestAnswerProvider).startStopDataCollection(stop: true);
-              Navigator.of(context).popUntil((route) => route.isFirst);
+              ref.read(dataProvider).startStopDataCollection(stop: true);
+              Navigator.of(context).pop();
             },
           ),
         ),

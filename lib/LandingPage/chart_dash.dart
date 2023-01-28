@@ -20,7 +20,7 @@ class _DataChart extends ConsumerState<DataChart> {
   @override
   Widget build(BuildContext context) {
     dataTypes = ref.watch(dataTypesProvider).types;
-    var rawDataSource = ref.watch(requestAnswerProvider).provideRawData(widget.imu);
+    var rawDataSource = ref.watch(dataProvider).provideRawData(widget.imu);
     List series = [];
     List<String> labels = [];
 

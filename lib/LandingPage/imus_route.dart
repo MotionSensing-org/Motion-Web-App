@@ -188,11 +188,11 @@ class _IMUsRoute extends ConsumerState<IMUsRoute> {
                       }
                       switch(snapshot.connectionState) {
                         case ConnectionState.done:
-                          ref.read(requestAnswerProvider).startStopDataCollection();
+                          ref.read(dataProvider).startStopDataCollection();
                           var connectedIMUs = jsonDecode(snapshot.data)['connection_state'];
-                          ref.read(requestAnswerProvider).imus = connectedIMUs['imus'];
+                          ref.read(dataProvider).imus = connectedIMUs['imus'];
                           ref.read(imusListProvider).imus = connectedIMUs['imus'];
-                          ref.read(requestAnswerProvider).shouldInitBuffers = true;
+                          ref.read(dataProvider).shouldInitBuffers = true;
                           // ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
 
                           return ClipRRect(

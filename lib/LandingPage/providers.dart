@@ -37,43 +37,34 @@ class Deque {
 }
 
 class RequestHandler extends ChangeNotifier {
-  String url;
+  String url = '';
   String query = "?request_type=";
   String curAlg = '';
   List algorithms = [];
   List curAlgParams = [];
   List imus = [];
   Map paramsToSet = {};
-  Map dataBuffer = {};
   Ref ref;
-  Map checkpointDataBuffer = {};
   Map dataTypes = {};
   String? filename;
   File? outputFile;
   bool stop = true;
-  bool createdFile = false;
-  bool saveFile = true;
-  bool shouldInitBuffers = false;
   int iterationNumber = 0;
-  bool headersInitialized = false;
-  bool printedHeaders = false;
   bool connectionSuccess = false;
-  final int bufferSize = 500;
-  int curBufferSize = 0;
-  final int writeLength = 100;
   Mutex m = Mutex();
   List<List> rows = [];
   int cyclicIterationNumber = -1;
-  int initializedChartControllers = 0;
   int dataTypesCount = 0;
-  final stopWatch = Stopwatch();
 
-  RequestHandler(this.url, this.ref) {
-    Timer.periodic(const Duration(milliseconds: 50), updateDataSource);
-  }
+  RequestHandler(this.ref);
 
   void setServerAddress(String serverAddress) {
     url = serverAddress;
+    ref.read(dataProvider).setServerAddress(url);
+  }
+
+  void clearOutputFileName() {
+    notifyListeners();
   }
 
   void connectionSuccessful(bool success) {
@@ -84,21 +75,12 @@ class RequestHandler extends ChangeNotifier {
     return connectionSuccess;
   }
 
-  void increaseControllerCount() {
-    initializedChartControllers += 1;
-  }
-
   void setParamsMap(Map params) {
     paramsToSet = params;
   }
 
   void setQuery(String query) {
     this.query = "?request_type=$query";
-  }
-
-  void startStopDataCollection({bool stop=true}) {
-    this.stop = stop;
-    outputFile = null;
   }
 
   Future<Map> getDecodedData() async {
@@ -110,24 +92,15 @@ class RequestHandler extends ChangeNotifier {
     query = '?request_type=algorithms';
     Map data = await getDecodedData();
     algorithms = data['algorithms'];
-
+    notifyListeners();
     return true;
   }
-
-  // Future<bool> getImus() async {
-  //   query = '?request_type=get_imus';
-  //   Map data = await getDecodedData();
-  //   imus = data['imus'];
-  //   ref.read(imusListProvider).imus = imus;
-  //
-  //   return true;
-  // }
 
   Future<bool> getAlgParams() async {
     query = '?request_type=get_params';
     Map data = await getDecodedData();
     curAlgParams = data['params'];
-
+    notifyListeners();
     return true;
   }
 
@@ -135,7 +108,8 @@ class RequestHandler extends ChangeNotifier {
     query = '?request_type=get_cur_alg';
     Map data = await getDecodedData();
     curAlg = data['cur_alg'];
-
+    ref.read(dataProvider).curAlg = curAlg;
+    notifyListeners();
     return true;
   }
 
@@ -143,9 +117,66 @@ class RequestHandler extends ChangeNotifier {
     query = '?request_type=get_data_types';
     Map data = await getDecodedData();
     dataTypes = data['data_types'];
+    ref.read(dataProvider).dataTypes = dataTypes;
 
     ref.read(dataTypesProvider).updateDict(dataTypes);
     return true;
+  }
+
+  Future setCurAlg() async {
+    var body = json.encode(ref.read(chosenAlgorithmProvider).chosenAlg);
+    await setServerParams(Uri.parse('$url?request_type=set_cur_alg'), body);
+    return;
+  }
+
+  Future setAlgParams() async {
+    var body = json.encode(paramsToSet);
+    await setServerParams(Uri.parse(url+query), body);
+    return;
+  }
+
+  Future connectToIMUs(Map<String, List<TextFieldClass>> addedIMUs) async {
+    Map<String, List<String>> addedIMUSStrings = {
+      'imus': addedIMUs['imus']!.map((e) => e.imuMac).toList(),
+      'feedbacks': addedIMUs['feedbacks']!.map((e) => e.imuMac).toList()
+    };
+    var body = json.encode(addedIMUSStrings);
+    return await setServerParams(Uri.parse('$url?request_type=set_imus'), body);
+  }
+}
+
+class DataProvider extends ChangeNotifier {
+  late String url;
+  String curAlg = '';
+  List imus = [];
+  Map dataBuffer = {};
+  Map checkpointDataBuffer = {};
+  Map dataTypes = {};
+  Ref ref;
+  String? filename;
+  bool stop = true;
+  bool shouldInitBuffers = false;
+  final int bufferSize = 500;
+  Mutex m = Mutex();
+  final stopWatch = Stopwatch();
+  late Timer t;
+
+  DataProvider(this.ref) {
+    t = Timer.periodic(const Duration(milliseconds: 20), updateDataSource);
+  }
+
+  @override
+  void dispose() {
+    t.cancel();
+    super.dispose();
+  }
+
+  void setServerAddress(String serverAddress) {
+    url = serverAddress;
+  }
+
+  void startStopDataCollection({bool stop=true}) {
+    this.stop = stop;
   }
 
   Map provideRawData(String imu) {
@@ -155,9 +186,6 @@ class RequestHandler extends ChangeNotifier {
   void initBuffersAndTypesCounter() {
     dataBuffer = {};
     checkpointDataBuffer = {};
-    dataTypes.forEach((key, value) {
-      dataTypesCount += value.length as int;
-    });
 
     for (var imu in imus) {
       dataBuffer[imu] = {};
@@ -173,46 +201,8 @@ class RequestHandler extends ChangeNotifier {
     }
   }
 
-  Future setCurAlg() async {
-    var body = json.encode(ref.read(chosenAlgorithmProvider).chosenAlg);
-    await setServerParams(Uri.parse('${url}?request_type=set_cur_alg'), body);
-    // setQuery(curAlg);
-    return;
-  }
-
   void updateDataSource(Timer timer) async {
-    if(imus.isEmpty) {
-      return;
-    }
-
-    if(algorithms.isEmpty) {
-      await getAlgList();
-      notifyListeners();
-    }
-
-    if(curAlgParams.isEmpty) {
-      await getAlgParams();
-      notifyListeners();
-    }
-
-    if(curAlg == '') {
-      await getCurAlg();
-      notifyListeners();
-    }
-
-    if(dataTypes.isEmpty) {
-      await getDataTypes();
-      // notifyListeners();
-    }
-
-    if(query == '?request_type=set_params') {
-      var body = json.encode(paramsToSet);
-      await setServerParams(Uri.parse(url+query), body);
-      setQuery(curAlg);
-      return;
-    }
-
-    if(dataBuffer.isEmpty || shouldInitBuffers) {
+    if(imus.isNotEmpty && dataTypes.isNotEmpty && shouldInitBuffers) {
       initBuffersAndTypesCounter();
       shouldInitBuffers = false;
     }
@@ -223,8 +213,7 @@ class RequestHandler extends ChangeNotifier {
       return;
     }
 
-    query = '?request_type=$curAlg';
-    var data = await getData(Uri.parse(url + query));
+    var data = await getData(Uri.parse('$url?request_type=$curAlg'));
     if(!stopWatch.isRunning) {
       stopWatch.start();
     }
@@ -259,10 +248,6 @@ class RequestHandler extends ChangeNotifier {
       await writeData();
     }
 
-    // else {
-    //   String csv = const ListToCsvConverter().convert([[row]]);
-    //   outputFile?.writeAsString('$csv\n', mode: FileMode.append);
-    // }
     notifyListeners();
   }
 
@@ -277,7 +262,6 @@ class RequestHandler extends ChangeNotifier {
       row.add(imu);
       types.forEach((type, dataDeque) {
         row.add(dataDeque.q.last);
-        // print('q length: ${dataDeque.q.length}');
       });
     });
     row.add(stopWatch.elapsedMilliseconds / 1000);
@@ -293,18 +277,6 @@ class RequestHandler extends ChangeNotifier {
         }
       }
     });
-  }
-
-  Future connectToIMUs(Map<String, List<TextFieldClass>> addedIMUs) async {
-    Map<String, List<String>> addedIMUSStrings = {
-      'imus': addedIMUs['imus']!.map((e) => e.imuMac).toList(),
-      'feedbacks': addedIMUs['feedbacks']!.map((e) => e.imuMac).toList()
-    };
-    // imus = addedIMUSStrings['imus']!;
-    var body = json.encode(addedIMUSStrings);
-    // var body = json.encode({'imus': ['8889989'], 'feedbacks': []});
-    print('server url: $url');
-    return await setServerParams(Uri.parse('$url?request_type=set_imus'), body);
   }
 }
 
@@ -348,7 +320,6 @@ class IMUsCounter extends ChangeNotifier {
   int imuCount = 0;
   void inc() {
     imuCount += 1;
-    print('imu count: $imuCount');
     notifyListeners();
   }
 
@@ -380,20 +351,22 @@ final shortTallProvider = ChangeNotifierProvider((ref) {
   return ShortTall();
 });
 
-
 final imusCounter = ChangeNotifierProvider((ref) {
   return IMUsCounter();
 });
-
 
 final playPauseProvider = ChangeNotifierProvider((ref) {
   return PlayPause();
 });
 
 final requestAnswerProvider = ChangeNotifierProvider((ref) {
-  return RequestHandler('http://127.0.0.1:8080/', ref);
+  return RequestHandler(ref);
 });
 
 final chosenAlgorithmProvider = ChangeNotifierProvider((ref) {
   return AlgListManager();
+});
+
+final dataProvider = ChangeNotifierProvider((ref) {
+  return DataProvider(ref);
 });
