@@ -97,7 +97,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
             onPressed: () {
               widget.properties['output_file'] = null;
               ref.read(dataProvider).startStopDataCollection(stop: true);
-              Navigator.of(context).pop();
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
           ),
         ),
