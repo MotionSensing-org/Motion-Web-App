@@ -29,7 +29,7 @@ class _IMUListState extends ConsumerState<IMUList> {
           padding: const EdgeInsets.all(8.0),
           child: FloatingActionButton(
             heroTag: 'Add ${widget.isFeedbackList ? 'feedback' : 'IMU'}',
-            backgroundColor: Colors.black.withOpacity(0.4),
+            backgroundColor: Colors.black.withOpacity(0.6),
             onPressed: () {
               setState(() {
                 if(!widget.isFeedbackList) {
@@ -85,7 +85,7 @@ class _IMUListState extends ConsumerState<IMUList> {
                     child: FractionallySizedBox(
                       widthFactor: 0.7,
                       child: TextFormField(
-                        style: Theme.of(context).textTheme.bodyText1,
+                        style: TextStyle(color: Colors.black.withOpacity(0.6)),
                         textAlign: TextAlign.center,
                         controller: widget.addedIMUs[index].controller..text = widget.addedIMUs[index].imuMac,
                         // initialValue: '88:6B:0F:E1:D8:68',
@@ -210,15 +210,36 @@ class _IMUsRoute extends ConsumerState<IMUsRoute> {
                                     Padding(
                                       padding: const EdgeInsets.all(8.0),
                                       child: Text(
-                                        'Connected successfully to IMUs: \nIMUs: ${connectedIMUs['imus']}, Feedbacks: ${connectedIMUs['feedbacks']}',
+                                        'Connected successfully to IMUs:',
+                                        style: TextStyle(
+                                            color: Colors.black.withOpacity(0.6),
+                                        ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        '${connectedIMUs['imus']}',
                                         style: const TextStyle(
-                                            color: Colors.white,
-                                            shadows: [
-                                              Shadow(
-                                                  blurRadius: 5,
-                                                  color: Colors.grey
-                                              )
-                                            ]
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        'Feedbacks:',
+                                        style: TextStyle(
+                                          color: Colors.black.withOpacity(0.6),
+                                        ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        '${connectedIMUs['feedbacks']}',
+                                        style: const TextStyle(
+                                          color: Colors.green,
                                         ),
                                       ),
                                     ),

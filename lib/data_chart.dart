@@ -112,9 +112,26 @@ class _BaseDataChartState extends State<BaseDataChart> {
                 maxScale: 10.0,
                 child: LineChart(
                   LineChartData(
+                    lineTouchData: LineTouchData(
+                        touchTooltipData: LineTouchTooltipData(
+                          fitInsideHorizontally: true,
+                          fitInsideVertically: true,
+                        )
+                    ),
                     titlesData: FlTitlesData(
                         show: true,
-                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false,)),
+                        topTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (double val, _) {
+                                  return FittedBox(fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        val.toInt().toString(),
+                                        style: const TextStyle(color: Colors.transparent),)
+                                  );
+                                }
+                            )
+                        ),
                         rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false,)),
                         leftTitles: AxisTitles(
                             sideTitles: SideTitles(

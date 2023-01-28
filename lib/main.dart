@@ -1,13 +1,10 @@
 import 'dart:ui';
-import 'package:csv/csv.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'LandingPage/animated_indexed_stack.dart';
 import 'LandingPage/chart_dash_route.dart';
 import 'LandingPage/dash_control.dart';
 import 'LandingPage/imus_route.dart';
-import 'dart:io';
 import 'LandingPage/providers.dart';
 
 void main() {
@@ -68,16 +65,6 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Motion Sensing',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        // primarySwatch: Colors.green,
         inputDecorationTheme: const InputDecorationTheme(
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(
@@ -87,19 +74,19 @@ class MyApp extends ConsumerWidget {
         ),
         expansionTileTheme: ExpansionTileThemeData(
           iconColor: Colors.blue.shade700,
-          collapsedIconColor: Colors.white,
-          collapsedTextColor: Colors.white,
+          collapsedIconColor: Colors.black.withOpacity(0.7),
+          collapsedTextColor: Colors.black.withOpacity(0.7),
           textColor: Colors.blue.shade700,
         ),
         textTheme: const TextTheme(
           bodyText1: TextStyle(
               color: Colors.white,
-              shadows: [
-                Shadow(
-                    blurRadius: 5,
-                    color: Colors.grey
-                )
-              ]
+              // shadows: [
+              //   Shadow(
+              //       blurRadius: 5,
+              //       color: Colors.grey
+              //   )
+              // ]
           ),
         ),
         appBarTheme: const AppBarTheme(
@@ -180,19 +167,11 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
                       child: Text(
                           'Please insert server address:',
-                          style: TextStyle(
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                    blurRadius: 5,
-                                    color: Colors.grey
-                                )
-                              ]
-                          )
+                          style: TextStyle(color: Colors.black.withOpacity(0.6),)
                       ),
                     ),
                     Padding(
@@ -200,7 +179,7 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                       child: FractionallySizedBox(
                         widthFactor: 0.7,
                         child: TextFormField(
-                          style: Theme.of(context).textTheme.bodyText1,
+                          style: TextStyle(color: Colors.black.withOpacity(0.6),),
                           textAlign: TextAlign.center,
                           controller: serverInputController..text = 'http://127.0.0.1:5000',
                           onFieldSubmitted: (value) {
