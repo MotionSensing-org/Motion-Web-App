@@ -189,7 +189,8 @@ class _IMUsRoute extends ConsumerState<IMUsRoute> {
                       switch(snapshot.connectionState) {
                         case ConnectionState.done:
                           ref.read(dataProvider).startStopDataCollection();
-                          var connectedIMUs = jsonDecode(snapshot.data)['connection_state'];
+                          print(utf8.decode(snapshot.data).runtimeType);
+                          var connectedIMUs = jsonDecode(utf8.decode(snapshot.data))['set_imus'];
                           ref.read(dataProvider).imus = connectedIMUs['imus'];
                           ref.read(imusListProvider).imus = connectedIMUs['imus'];
                           ref.read(dataProvider).shouldInitBuffers = true;

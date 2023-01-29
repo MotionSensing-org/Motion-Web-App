@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iot_project/LandingPage/requests.dart';
 import 'package:mutex/mutex.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 const narrowWidth = 650;
 const shortHeight = 650;
@@ -55,12 +56,15 @@ class RequestHandler extends ChangeNotifier {
   List<List> rows = [];
   int cyclicIterationNumber = -1;
   int dataTypesCount = 0;
-
+  // late WebSocket socket;
+  late WebSocketChannel channel;
   RequestHandler(this.ref);
 
-  void setServerAddress(String serverAddress) {
-    url = serverAddress;
-    ref.read(dataProvider).setServerAddress(url);
+  Future<void> setServerAddress(String serverAddress) async {
+    // socket = await WebSocket.connect(serverAddress);
+    this.url = serverAddress;
+    ref.read(dataProvider).url = serverAddress;
+    channel = WebSocketChannel.connect(Uri.parse(serverAddress));
   }
 
   void clearOutputFileName() {
@@ -84,54 +88,100 @@ class RequestHandler extends ChangeNotifier {
   }
 
   Future<Map> getDecodedData() async {
-    var data = await getData(Uri.parse(url + query));
-    return jsonDecode(data);
+    channel.sink.close();
+    channel = WebSocketChannel.connect(Uri.parse(url));
+    var data = await channel.stream.first; //await getData(Uri.parse(url + query));
+    // await for (String str in channel.stream) {
+    //   print(strData);
+    // }
+    return jsonDecode(utf8.decode(data));
   }
 
   Future<bool> getAlgList() async {
-    query = '?request_type=algorithms';
-    Map data = await getDecodedData();
-    algorithms = data['algorithms'];
+    // query = '?request_type=algorithms';
+    // channel = WebSocketChannel.connect(Uri.parse(url));
+    channel.sink.close();
+    channel = WebSocketChannel.connect(Uri.parse(url));
+    var body = json.encode({'header': 'algorithms'});
+    channel.sink.add(body);
+    var data;
+    try {
+      data = await channel.stream.first;
+    } on Exception catch(e) {
+      print('hurray $e');
+    }
+
+    var decodedData = jsonDecode(utf8.decode(data));
+    algorithms = decodedData['algorithms'];
+
     notifyListeners();
     return true;
   }
 
   Future<bool> getAlgParams() async {
-    query = '?request_type=get_params';
-    Map data = await getDecodedData();
-    curAlgParams = data['params'];
+    channel.sink.close();
+    channel = WebSocketChannel.connect(Uri.parse(url));
+    var body = json.encode({'header': 'get_params'});
+    channel.sink.add(body);
+    var data = await channel.stream.first;
+    var decodedData = jsonDecode(utf8.decode(data));
+    curAlgParams = decodedData['get_params'];
+    channel.sink.close();
     notifyListeners();
     return true;
+    // query = '?request_type=get_params';
+    // Map data = await getDecodedData();
+    // curAlgParams = data['params'];
+    // notifyListeners();
+    // return true;
   }
 
   Future<bool> getCurAlg() async {
-    query = '?request_type=get_cur_alg';
-    Map data = await getDecodedData();
-    curAlg = data['cur_alg'];
+    channel.sink.close();
+    channel = WebSocketChannel.connect(Uri.parse(url));
+    var body = json.encode({'header': 'get_cur_alg'});
+    channel.sink.add(body);
+    var data = await channel.stream.first;
+    var decodedData = jsonDecode(utf8.decode(data));
+    curAlg = decodedData['get_cur_alg'];
     ref.read(dataProvider).curAlg = curAlg;
     notifyListeners();
     return true;
   }
 
   Future<bool> getDataTypes() async {
-    query = '?request_type=get_data_types';
-    Map data = await getDecodedData();
-    dataTypes = data['data_types'];
+    channel.sink.close();
+    channel = WebSocketChannel.connect(Uri.parse(url));
+    var body = json.encode({'header': 'get_data_types'});
+    channel.sink.add(body);
+    var data = await channel.stream.first;
+    var decodedData = jsonDecode(utf8.decode(data));
+    dataTypes = decodedData['get_data_types'];
     ref.read(dataProvider).dataTypes = dataTypes;
-
     ref.read(dataTypesProvider).updateDict(dataTypes);
+    notifyListeners();
     return true;
   }
 
   Future setCurAlg() async {
-    var body = json.encode(ref.read(chosenAlgorithmProvider).chosenAlg);
-    await setServerParams(Uri.parse('$url?request_type=set_cur_alg'), body);
+    // var body = json.encode(ref.read(chosenAlgorithmProvider).chosenAlg);
+    channel.sink.close();
+    channel = WebSocketChannel.connect(Uri.parse(url));
+    var body = json.encode({'header': 'set_cur_alg', 'body': ref.read(chosenAlgorithmProvider).chosenAlg});
+    // await setServerParams(Uri.parse('$url?request_type=set_cur_alg'), body);
+    channel.sink.add(body);
     return;
   }
 
   Future setAlgParams() async {
-    var body = json.encode(paramsToSet);
-    await setServerParams(Uri.parse(url+query), body);
+    channel.sink.close();
+    channel = WebSocketChannel.connect(Uri.parse(url));
+    var body = json.encode({'header': 'set_params', 'body': paramsToSet});
+    // await setServerParams(Uri.parse('$url?request_type=set_cur_alg'), body);
+    channel.sink.add(body);
+
+    // var body = json.encode(paramsToSet);
+    // await setServerParams(Uri.parse(url), body);
     return;
   }
 
@@ -140,8 +190,13 @@ class RequestHandler extends ChangeNotifier {
       'imus': addedIMUs['imus']!.map((e) => e.imuMac).toList(),
       'feedbacks': addedIMUs['feedbacks']!.map((e) => e.imuMac).toList()
     };
-    var body = json.encode(addedIMUSStrings);
-    return await setServerParams(Uri.parse('$url?request_type=set_imus'), body);
+    var body = json.encode({'header': 'set_imus', 'body': addedIMUSStrings});
+    channel = WebSocketChannel.connect(Uri.parse(url));
+    channel.sink.add(body.toString());
+    var data = await channel.stream.first;
+    channel.sink.close();
+    print('set imus response: ${utf8.decode(data)}');
+    return data;
   }
 }
 
@@ -160,7 +215,8 @@ class DataProvider extends ChangeNotifier {
   Mutex m = Mutex();
   final stopWatch = Stopwatch();
   late Timer t;
-
+  late WebSocketChannel channel;
+  // DataProvider(this.ref);
   DataProvider(this.ref) {
     t = Timer.periodic(const Duration(milliseconds: 20), updateDataSource);
   }
@@ -180,6 +236,7 @@ class DataProvider extends ChangeNotifier {
   }
 
   Map provideRawData(String imu) {
+    // while(checkpointDataBuffer[imu] == null){}
     return checkpointDataBuffer[imu];
   }
 
@@ -213,19 +270,37 @@ class DataProvider extends ChangeNotifier {
       return;
     }
 
-    var data = await getData(Uri.parse('$url?request_type=$curAlg'));
-    if(!stopWatch.isRunning) {
-      stopWatch.start();
+
+    channel = WebSocketChannel.connect(Uri.parse(url));
+    var body = json.encode({'header': curAlg});
+    channel.sink.add(body);
+    print('update data source');
+    var data;
+    try {
+      data = await channel.stream.first;
+    } on Exception catch(e) {
+      print('hurray $e');
     }
-    // print(data);
-    var decodedData = jsonDecode(data);
+    // var data = await channel.stream.first;
+    var decodedData = jsonDecode(utf8.decode(data))[curAlg];
+
+    if(decodedData == null) {
+      return;
+    }
+
+    // var data = await getData(Uri.parse('$url?request_type=$curAlg'));
+    // if(!stopWatch.isRunning) {
+    //   stopWatch.start();
+    // }
+    // // print(data);
+    // var decodedData = jsonDecode(data);
     for (var imu in imus) {
       dataTypes.forEach((key, value) async {
         for (var type in value) {
           if(decodedData[imu] == null) {
             continue;
           }
-
+          print(decodedData[imu][type]);
           var strList = decodedData[imu][type]
               .toString()
               .replaceAll(RegExp(r'[\[\],]'), '')
@@ -253,6 +328,7 @@ class DataProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+    channel.sink.close();
   }
 
   Future writeData() async {

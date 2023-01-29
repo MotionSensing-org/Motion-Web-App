@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iot_project/LandingPage/providers.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:core';
 import '../data_chart.dart';
 
@@ -16,11 +17,26 @@ class DataChart extends ConsumerStatefulWidget{
 
 class _DataChart extends ConsumerState<DataChart> {
   Map dataTypes = {};
+  // Map<String, De> buffers = {};
+  late String url;
+  // late final WebSocketChannel channel;
+
+  // @override
+  // void initState() {
+  //   // TODO: implement initState
+  //   channel = WebSocketChannel.connect(Uri.parse(ref.read(requestAnswerProvider).url));
+  //   super.initState();
+  // }
 
   @override
   Widget build(BuildContext context) {
     dataTypes = ref.watch(dataTypesProvider).types;
+    // for(var subType in dataTypes[widget.dataType]) {
+    //   buffers[subType]
+    //   labels.add(subType);
+    // }
     var rawDataSource = ref.watch(dataProvider).provideRawData(widget.imu);
+
     List series = [];
     List<String> labels = [];
 
@@ -32,6 +48,16 @@ class _DataChart extends ConsumerState<DataChart> {
     }
 
     return BaseDataChart(linesData: series, labels: labels, title: widget.dataType,);
+    // return StreamBuilder(
+    //   stream: channel.stream,
+    //   builder: (context, snapshot) {
+    //     if(snapshot.hasData) {
+    //       q.add([jsonDecode(utf8.decode(snapshot.data))['raw_data'][0]['AccelX']]);
+    //     }
+    //     return snapshot.hasData ? DataChart(linesData: [q.q]) : const Text('');
+    //     //  return Text(snapshot.hasData ? jsonDecode(utf8.decode(snapshot.data))['raw_data'][0]['AccelX'].toString() : '');
+    //   },
+    // );
   }
 }
 

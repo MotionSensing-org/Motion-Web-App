@@ -181,7 +181,7 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                         child: TextFormField(
                           style: TextStyle(color: Colors.black.withOpacity(0.6),),
                           textAlign: TextAlign.center,
-                          controller: serverInputController..text = 'http://127.0.0.1:5000',
+                          controller: serverInputController..text = 'ws://127.0.0.1:8080',
                           onFieldSubmitted: (value) {
                             // serverUrl = value;
                             serverInputController.text = value;
@@ -264,7 +264,9 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                                 return;
                               }
 
+                              // ref.read(dataProvider).startStopDataCollection();
                               await Navigator.of(context).pushNamed('imus_route');
+                              // ref.read(dataProvider).startStopDataCollection(stop: false);
                               setState(() {});
                             }
                         ),
@@ -397,12 +399,14 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
 
                                   ref.read(dataProvider).startStopDataCollection();
                                   // ref.read(requestAnswerProvider).setQuery('set_params');
-                                  ref.read(requestAnswerProvider).setParamsMap(widget.properties);
-                                  ref.read(requestAnswerProvider).setAlgParams();
+                                  // ref.read(requestAnswerProvider).setParamsMap(widget.properties);
+                                  // ref.read(requestAnswerProvider).setAlgParams();
 
-                                  ref.read(requestAnswerProvider).getAlgParams();
-                                  ref.read(requestAnswerProvider).getCurAlg();
-                                  ref.read(requestAnswerProvider).getDataTypes();
+                                  await ref.read(requestAnswerProvider).getAlgParams();
+                                  await ref.read(requestAnswerProvider).getCurAlg();
+                                  await ref.read(requestAnswerProvider).getDataTypes();
+                                  // ref.read(requestAnswerProvider).getCurAlg();
+                                  // ref.read(requestAnswerProvider).getAlgParams();
                                   await Navigator.of(context).pushNamed('dash_control_route');
                                 },
                                 icon: const Icon(

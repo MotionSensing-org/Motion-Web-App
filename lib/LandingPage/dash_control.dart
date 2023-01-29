@@ -259,6 +259,8 @@ class _AlgParams extends ConsumerState<AlgParams>{
                 }
               }
             }
+            ref.read(requestAnswerProvider).setParamsMap(widget.properties);
+            await ref.read(requestAnswerProvider).setAlgParams();
             ref.read(dataProvider).startStopDataCollection(stop: false);
             await Navigator.of(context).pushNamed('chart_dash_route');
             ref.read(requestAnswerProvider).clearOutputFileName();
@@ -363,7 +365,9 @@ class _DashControl extends ConsumerState<DashControl> {
                                       widget.properties['alg_name'] = value;
                                       ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
                                       ref.read(dataProvider).curAlg = value;
-                                      ref.read(requestAnswerProvider).setCurAlg();
+                                      // ref.read(requestAnswerProvider).setCurAlg();
+                                      // ref.read(requestAnswerProvider).getCurAlg();
+                                      // ref.read(requestAnswerProvider).getAlgParams();
                                     });
                                   }
                               ),
