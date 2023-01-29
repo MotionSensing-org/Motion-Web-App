@@ -217,7 +217,7 @@ class DataProvider extends ChangeNotifier {
     if(!stopWatch.isRunning) {
       stopWatch.start();
     }
-
+    // print(data);
     var decodedData = jsonDecode(data);
     for (var imu in imus) {
       dataTypes.forEach((key, value) async {
@@ -231,6 +231,10 @@ class DataProvider extends ChangeNotifier {
               .replaceAll(RegExp(r'[\[\],]'), '')
               .split(' ')
               .toList();
+          // if(strList.isEmpty || strList[0].isEmpty) {
+          //   return;
+          // }
+          // print(strList);
 
           var rawDataList = strList
               .map((x) => double.parse(x))

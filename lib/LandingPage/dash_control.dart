@@ -226,6 +226,47 @@ class _AlgParams extends ConsumerState<AlgParams>{
       }
     }
 
+    params.add(Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Container(
+        decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: const BorderRadius.all(Radius.circular(10))
+        ),
+        child: TextButton(onPressed: () async {
+            ref.read(dataProvider).filename = widget.properties['output_file'];
+            if(widget.properties['output_file'] != null) {
+              if(!File(widget.properties['output_file']).existsSync()) {
+                var outputFile = File(widget.properties['output_file']!!);
+                List headers = [];
+                List imus = ref.watch(imusListProvider).imus;
+                var types = ref.watch(dataTypesProvider).types;
+                for(int i = 0; i < imus.length; i++) {
+                  headers.add('IMU');
+                  types.forEach((key, value) {
+                    headers.addAll(value);
+                  });
+                }
+                headers.add('Time [sec]');
+
+                String csv = const ListToCsvConverter().convert([headers]);
+                try {
+                  outputFile.writeAsStringSync('$csv\n', mode: FileMode.append);
+                } catch (e) {
+                  if (kDebugMode) {
+                    print(e);
+                  }
+                }
+              }
+            }
+            ref.read(dataProvider).startStopDataCollection(stop: false);
+            await Navigator.of(context).pushNamed('chart_dash_route');
+            ref.read(requestAnswerProvider).clearOutputFileName();
+          },
+          child: const Text('Start', style: TextStyle(color: Colors.green),)),
+      ),
+    ));
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: params,
@@ -385,36 +426,6 @@ class _DashControlRoute extends ConsumerState<DashControlRoute> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           DashControl(properties: widget.properties,),
-                          TextButton(onPressed: () async {
-                            ref.read(dataProvider).filename = widget.properties['output_file'];
-                            if(widget.properties['output_file'] != null) {
-                              if(!File(widget.properties['output_file']).existsSync()) {
-                                var outputFile = File(widget.properties['output_file']!!);
-                                List headers = [];
-                                List imus = ref.watch(imusListProvider).imus;
-                                var types = ref.watch(dataTypesProvider).types;
-                                for(int i = 0; i < imus.length; i++) {
-                                  headers.add('IMU');
-                                  types.forEach((key, value) {
-                                    headers.addAll(value);
-                                  });
-                                }
-                                headers.add('Time [sec]');
-
-                                String csv = const ListToCsvConverter().convert([headers]);
-                                try {
-                                  outputFile.writeAsStringSync('$csv\n', mode: FileMode.append);
-                                } catch (e) {
-                                  if (kDebugMode) {
-                                    print(e);
-                                  }
-                                }
-                              }
-                            }
-                            ref.read(dataProvider).startStopDataCollection(stop: false);
-                            await Navigator.of(context).pushNamed('chart_dash_route');
-                            ref.read(requestAnswerProvider).clearOutputFileName();
-                          }, child: const Text('start'))
                         ],
                       )
                   ),

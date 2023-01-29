@@ -67,7 +67,7 @@ class _BaseDataChartState extends State<BaseDataChart> {
       return LineChartBarData(
           color: lineColors[index],
           spots: List.generate(widget.linesData[index].length, (dataIndex) => FlSpot(dataIndex.toDouble(), widget.linesData[index][dataIndex])),
-          isCurved: true,
+          // isCurved: true,
           dotData: FlDotData(show: false),
           show: showLines[index]
       );
