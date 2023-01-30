@@ -131,7 +131,7 @@ class RequestHandler extends ChangeNotifier {
 
   Future setAlgParams() async {
     var body = json.encode(paramsToSet);
-    await setServerParams(Uri.parse(url+query), body);
+    await setServerParams(Uri.parse('$url?request_type=set_params'), body);
     return;
   }
 

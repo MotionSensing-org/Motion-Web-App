@@ -395,10 +395,10 @@ class _MyHomePage extends ConsumerState<MyHomePage>{
                                     return;
                                   }
 
-                                  ref.read(dataProvider).startStopDataCollection();
-                                  // ref.read(requestAnswerProvider).setQuery('set_params');
-                                  ref.read(requestAnswerProvider).setParamsMap(widget.properties);
-                                  ref.read(requestAnswerProvider).setAlgParams();
+                                  // ref.read(dataProvider).startStopDataCollection();
+                                  // // ref.read(requestAnswerProvider).setQuery('set_params');
+                                  // ref.read(requestAnswerProvider).setParamsMap(widget.properties);
+                                  // ref.read(requestAnswerProvider).setAlgParams();
 
                                   ref.read(requestAnswerProvider).getAlgParams();
                                   ref.read(requestAnswerProvider).getCurAlg();

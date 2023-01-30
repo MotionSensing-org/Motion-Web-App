@@ -259,6 +259,12 @@ class _AlgParams extends ConsumerState<AlgParams>{
                 }
               }
             }
+
+            ref.read(dataProvider).startStopDataCollection();
+            // ref.read(requestAnswerProvider).setQuery('set_params');
+            ref.read(requestAnswerProvider).setParamsMap(widget.properties);
+            ref.read(requestAnswerProvider).setAlgParams();
+
             ref.read(dataProvider).startStopDataCollection(stop: false);
             await Navigator.of(context).pushNamed('chart_dash_route');
             ref.read(requestAnswerProvider).clearOutputFileName();
