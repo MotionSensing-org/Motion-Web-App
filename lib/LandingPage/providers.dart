@@ -1,23 +1,21 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:csv/csv.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iot_project/LandingPage/requests.dart';
+import 'package:iot_project/consts.dart';
 import 'package:mutex/mutex.dart';
 
-const narrowWidth = 650;
-const shortHeight = 650;
 
 
 class TextFieldClass{
   TextEditingController controller = TextEditingController();
   String imuMac;
 
-  TextFieldClass({required this.controller, this.imuMac='88:6B:0F:E1:D8:68'});
+  TextFieldClass({required this.controller, this.imuMac=exampleImuMac});
 }
 
 class Deque {
@@ -37,8 +35,6 @@ class Deque {
 }
 
 class RequestHandler extends ChangeNotifier {
-  String url = '';
-  String query = "?request_type=";
   String curAlg = '';
   List algorithms = [];
   List curAlgParams = [];
@@ -56,11 +52,14 @@ class RequestHandler extends ChangeNotifier {
   int cyclicIterationNumber = -1;
   int dataTypesCount = 0;
 
-  RequestHandler(this.ref);
+  RequestHandler(this.ref) {
+    Timer.periodic(const Duration(seconds: 4), keepAliveBackendConnection);
+  }
 
-  void setServerAddress(String serverAddress) {
-    url = serverAddress;
-    ref.read(dataProvider).setServerAddress(url);
+  Future<void> keepAliveBackendConnection(Timer timer) async {
+    if(connectionSuccess && ref.read(dataProvider).stop) {
+      await getData(query: 'keepalive');
+    }
   }
 
   void clearOutputFileName() {
@@ -79,43 +78,34 @@ class RequestHandler extends ChangeNotifier {
     paramsToSet = params;
   }
 
-  void setQuery(String query) {
-    this.query = "?request_type=$query";
-  }
-
-  Future<Map> getDecodedData() async {
-    var data = await getData(Uri.parse(url + query));
+  Future<Map> getDecodedData(String query) async {
+    var data = await getData(query: query);
     return jsonDecode(data);
   }
 
   Future<bool> getAlgList() async {
-    query = '?request_type=algorithms';
-    Map data = await getDecodedData();
+    Map data = await getDecodedData('algorithms');
     algorithms = data['algorithms'];
     notifyListeners();
     return true;
   }
 
   Future<bool> getAlgParams() async {
-    query = '?request_type=get_params';
-    Map data = await getDecodedData();
+    Map data = await getDecodedData('get_params');
     curAlgParams = data['params'];
     notifyListeners();
     return true;
   }
 
   Future<bool> getCurAlg() async {
-    query = '?request_type=get_cur_alg';
-    Map data = await getDecodedData();
+    Map data = await getDecodedData('get_cur_alg');
     curAlg = data['cur_alg'];
-    ref.read(dataProvider).curAlg = curAlg;
     notifyListeners();
     return true;
   }
 
   Future<bool> getDataTypes() async {
-    query = '?request_type=get_data_types';
-    Map data = await getDecodedData();
+    Map data = await getDecodedData('get_data_types');
     dataTypes = data['data_types'];
     ref.read(dataProvider).dataTypes = dataTypes;
 
@@ -125,13 +115,13 @@ class RequestHandler extends ChangeNotifier {
 
   Future setCurAlg() async {
     var body = json.encode(ref.read(chosenAlgorithmProvider).chosenAlg);
-    await setServerParams(Uri.parse('$url?request_type=set_cur_alg'), body);
+    await writeToServer(query: 'set_cur_alg', body: body);
     return;
   }
 
   Future setAlgParams() async {
     var body = json.encode(paramsToSet);
-    await setServerParams(Uri.parse('$url?request_type=set_params'), body);
+    await writeToServer(query: 'set_params', body: body);
     return;
   }
 
@@ -141,13 +131,11 @@ class RequestHandler extends ChangeNotifier {
       'feedbacks': addedIMUs['feedbacks']!.map((e) => e.imuMac).toList()
     };
     var body = json.encode(addedIMUSStrings);
-    return await setServerParams(Uri.parse('$url?request_type=set_imus'), body);
+    return await writeToServer(query: 'set_imus', body: body);
   }
 }
 
 class DataProvider extends ChangeNotifier {
-  late String url;
-  String curAlg = '';
   List imus = [];
   Map dataBuffer = {};
   Map checkpointDataBuffer = {};
@@ -162,17 +150,13 @@ class DataProvider extends ChangeNotifier {
   late Timer t;
 
   DataProvider(this.ref) {
-    t = Timer.periodic(const Duration(milliseconds: 20), updateDataSource);
+    t = Timer.periodic(const Duration(milliseconds: 40), updateDataSource);
   }
 
   @override
   void dispose() {
     t.cancel();
     super.dispose();
-  }
-
-  void setServerAddress(String serverAddress) {
-    url = serverAddress;
   }
 
   void startStopDataCollection({bool stop=true}) {
@@ -213,11 +197,11 @@ class DataProvider extends ChangeNotifier {
       return;
     }
 
-    var data = await getData(Uri.parse('$url?request_type=$curAlg'));
+    var data = await getDataStream();
     if(!stopWatch.isRunning) {
       stopWatch.start();
     }
-    // print(data);
+
     var decodedData = jsonDecode(data);
     for (var imu in imus) {
       dataTypes.forEach((key, value) async {
@@ -231,10 +215,6 @@ class DataProvider extends ChangeNotifier {
               .replaceAll(RegExp(r'[\[\],]'), '')
               .split(' ')
               .toList();
-          // if(strList.isEmpty || strList[0].isEmpty) {
-          //   return;
-          // }
-          // print(strList);
 
           var rawDataList = strList
               .map((x) => double.parse(x))
@@ -313,9 +293,17 @@ class PlayPause extends ChangeNotifier {
 
 class AlgListManager extends ChangeNotifier {
   String chosenAlg = '';
+  Ref ref;
+  AlgListManager(this.ref);
+
+  void clearChosenAlg() {
+    chosenAlg = '';
+    notifyListeners();
+  }
 
   void setChosenAlg(String alg) {
     chosenAlg = alg;
+    ref.read(requestAnswerProvider).setCurAlg();
     notifyListeners();
   }
 }
@@ -343,6 +331,39 @@ class ShortTall extends ChangeNotifier {
   }
 }
 
+class BackendProcessHandler extends ChangeNotifier {
+  String pythonScriptPath = '';
+  late Process process;
+  bool running = false;
+
+  Future<void> startBackendProcess() async {
+    if(pythonScriptPath.isEmpty) {
+      pythonScriptPath = await getPythonScriptPath();
+    }
+
+    process = await Process.start(
+      'python',
+      [pythonScriptPath],
+    );
+    running = true;
+  }
+
+  bool closeBackendProcess() {
+    running = false;
+    return process.kill();
+  }
+
+  @override
+  void dispose() {
+    process.kill();
+    super.dispose();
+  }
+}
+
+final backendProcessHandler = ChangeNotifierProvider((ref) {
+  return BackendProcessHandler();
+});
+
 final dataTypesProvider = ChangeNotifierProvider((ref) {
   return DataTypes();
 });
@@ -368,7 +389,7 @@ final requestAnswerProvider = ChangeNotifierProvider((ref) {
 });
 
 final chosenAlgorithmProvider = ChangeNotifierProvider((ref) {
-  return AlgListManager();
+  return AlgListManager(ref);
 });
 
 final dataProvider = ChangeNotifierProvider((ref) {

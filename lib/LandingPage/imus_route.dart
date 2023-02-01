@@ -88,7 +88,6 @@ class _IMUListState extends ConsumerState<IMUList> {
                         style: TextStyle(color: Colors.black.withOpacity(0.6)),
                         textAlign: TextAlign.center,
                         controller: widget.addedIMUs[index].controller..text = widget.addedIMUs[index].imuMac,
-                        // initialValue: '88:6B:0F:E1:D8:68',
                         onChanged: (value) {
                           widget.addedIMUs[index].imuMac = value;
                           // ref.read(imusProvider).addIMU(value, isFeedback: widget.isFeedbackList);
@@ -193,7 +192,7 @@ class _IMUsRoute extends ConsumerState<IMUsRoute> {
                           ref.read(dataProvider).imus = connectedIMUs['imus'];
                           ref.read(imusListProvider).imus = connectedIMUs['imus'];
                           ref.read(dataProvider).shouldInitBuffers = true;
-                          // ref.read(requestAnswerProvider).startStopDataCollection(stop: false);
+                          ref.read(requestAnswerProvider).connectionSuccess = true;
 
                           return ClipRRect(
                             borderRadius: const BorderRadius.all(Radius.circular(10)),

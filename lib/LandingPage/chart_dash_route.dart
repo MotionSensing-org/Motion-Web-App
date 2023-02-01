@@ -94,10 +94,13 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                   color: Colors.white
               ),
             ),
-            onPressed: () {
+            onPressed: () async {
               widget.properties['output_file'] = null;
               ref.read(dataProvider).startStopDataCollection(stop: true);
-              Navigator.of(context).popUntil((route) => route.isFirst);
+              await Future.delayed(const Duration(milliseconds: 100));
+              ref.read(requestAnswerProvider).connectionSuccess = false;
+              ref.read(backendProcessHandler).closeBackendProcess();
+              if(mounted) Navigator.of(context).popUntil((route) => route.settings.name == 'setup_route');
             },
           ),
         ),
@@ -130,7 +133,11 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                                     / (isShort || isNarrow ? 4 : 10),
                               ),
                             ),
-                            ChartDash(imu: imus[index],)
+                            Visibility(
+                                visible: chosenIMUIndex == index,
+                                // maintainState: true,
+                                child: ChartDash(imu: imus[index],)
+                            )
                           ]
                       );
                     });
@@ -141,7 +148,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
       ),
     );
 
-    Widget chartToggleButtons = ClipRRect(
+    Widget imuToggleButtons = ClipRRect(
       borderRadius: const BorderRadius.all(Radius.circular(20)),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -158,7 +165,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                   PointerDeviceKind.mouse,
                 },),
                 child: ListView.builder(
-                    scrollDirection: isShort || isNarrow ? Axis.vertical : Axis.horizontal,
+                  scrollDirection: isShort? Axis.vertical : Axis.horizontal,
                     shrinkWrap: true,
                     itemCount: imus.length,
                     itemBuilder: (context, index) {
@@ -181,7 +188,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                                       const Flexible(
                                         fit: FlexFit.loose,
                                         child: FittedBox(
-                                          fit: BoxFit.scaleDown,
+                                          fit: BoxFit.fill,
                                           child: Icon(
                                             Icons.sensors,
                                             color: _connectedIMUColor,
@@ -193,7 +200,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                                         child: Padding(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                           child: FittedBox(
-                                            fit: BoxFit.contain,
+                                            fit: BoxFit.fill,
                                             child: Text(
                                               imus[index].toString().substring(12),
                                               style: const TextStyle(
@@ -224,6 +231,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
 
     List<Widget> controlButtonList = [
       Flexible(
+        flex: 1,
         fit: FlexFit.loose,
         child: Padding(
           padding: const EdgeInsets.all(4.0),
@@ -245,8 +253,8 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                         height: controlButtonSizes[0],
                         duration:  const Duration(milliseconds: 100),
                         color: Colors.black.withOpacity(0.7),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
+                        child: FittedBox(
+                          fit: BoxFit.fill,
                           child: IconButton(
                               onPressed: () {
                                 setState(() {
@@ -266,34 +274,33 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
         ),
       ),
       Flexible(
+        flex: 1,
         fit: FlexFit.loose,
         child: Padding(
             padding: const EdgeInsets.all(4.0),
-            child: Center(
-              child: ClipOval(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: AnimatedContainer(
-                    onEnd: (){
-                      setState(() {
-                        controlButtonSizes[1] = 60;
-                      });
-                    },
-                    alignment: Alignment.center,
-                    width: controlButtonSizes[1],
-                    height: controlButtonSizes[1],
-                    duration:  const Duration(milliseconds: 100),
-                    color: Colors.black.withOpacity(0.7),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: IconButton(
-                        icon: const Icon(Icons.notifications, color: Colors.white,),
-                        onPressed: () {
-                          setState(() {
-                            controlButtonSizes[1] += 10;
-                          });
-                        },
-                      ),
+            child: ClipOval(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: AnimatedContainer(
+                  onEnd: (){
+                    setState(() {
+                      controlButtonSizes[1] = 60;
+                    });
+                  },
+                  alignment: Alignment.center,
+                  width: controlButtonSizes[1],
+                  height: controlButtonSizes[1],
+                  duration:  const Duration(milliseconds: 100),
+                  color: Colors.black.withOpacity(0.7),
+                  child: FittedBox(
+                    fit: BoxFit.fill,
+                    child: IconButton(
+                      icon: const Icon(Icons.notifications, color: Colors.white,),
+                      onPressed: () {
+                        setState(() {
+                          controlButtonSizes[1] += 10;
+                        });
+                      },
                     ),
                   ),
                 ),
@@ -302,6 +309,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
         ),
       ),
       Flexible(
+        flex: 1,
           fit: FlexFit.loose,
           child: Padding(
             padding: const EdgeInsets.all(4.0),
@@ -319,8 +327,8 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                   height: controlButtonSizes[2],
                   duration:  const Duration(milliseconds: 100),
                   color: Colors.black.withOpacity(0.7),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
+                  child: FittedBox(
+                    fit: BoxFit.fill,
                     child: IconButton(
                       icon: AnimatedIcon(
                           color: Colors.white,
@@ -344,75 +352,73 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
               ),
             ),
           )
-      )
+      ),
     ];
 
-    Widget regularDash = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+    Widget dash = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        //mainAxisSize: MainAxisSize.min,
-        children: [
-          Expanded(
-            flex: 6,
-            child: chartsForDisplay,
-          ),
-          Expanded(
-            flex: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Flexible(fit: FlexFit.loose, child: chartToggleButtons),
-                ],
-              ),
-            ),
-          ),
-          const Flexible(
-              fit: FlexFit.loose,
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 2.0),)
-          )
-        ],
-      ),
-    );
-
-    Widget smallDash = Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           Expanded(
-            flex: 7,
-            child: chartsForDisplay,
+            flex: 6,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Expanded(flex: 6, child: chartsForDisplay),
+                Flexible(
+                  flex: 1,
+                  child: Visibility(
+                    visible: isShort,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(fit: FlexFit.loose, child: imuToggleButtons),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           Flexible(
-            fit: FlexFit.loose,
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Flexible(fit: FlexFit.loose, child: chartToggleButtons),
-                  Flexible(
-                      fit: FlexFit.loose,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: controlButtonList,
-                        ),
-                      )
-                  )
-                ],
+            flex: 1,
+            child: Visibility(
+              visible: !isShort,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(fit: FlexFit.loose, child: imuToggleButtons),
+                  ],
+                ),
               ),
             ),
           ),
+          Flexible(
+            flex: 1,
+            fit: FlexFit.loose,
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: controlButtonList,
+              ),
+            ),
+          )
+          // const Flexible(
+          //     fit: FlexFit.loose,
+          //     child: Padding(
+          //       padding: EdgeInsets.symmetric(vertical: 2.0),)
+          // )
         ],
       ),
     );
@@ -443,21 +449,19 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
               height: double.infinity,
               image: AssetImage('assets/images/bg.png')
           ),
-          isShort || isNarrow ? smallDash : regularDash,
-          Positioned(
-            bottom: 0,
-            left: 0,
-            child: Visibility(
-                visible: !isShort && !isNarrow,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: controlButtonList,
-                  ),
-                )
-            ),
-          )
+          dash,
+          // Positioned(
+          //   bottom: 0,
+          //   left: 0,
+          //   child: Padding(
+          //     padding: const EdgeInsets.all(16.0),
+          //     child: Row(
+          //       mainAxisSize: MainAxisSize.min,
+          //       mainAxisAlignment: MainAxisAlignment.center,
+          //       children: controlButtonList,
+          //     ),
+          //   ),
+          // )
         ],
       ),
     );

@@ -261,13 +261,13 @@ class _AlgParams extends ConsumerState<AlgParams>{
             }
 
             ref.read(dataProvider).startStopDataCollection();
-            // ref.read(requestAnswerProvider).setQuery('set_params');
             ref.read(requestAnswerProvider).setParamsMap(widget.properties);
             ref.read(requestAnswerProvider).setAlgParams();
-
             ref.read(dataProvider).startStopDataCollection(stop: false);
             await Navigator.of(context).pushNamed('chart_dash_route');
             ref.read(requestAnswerProvider).clearOutputFileName();
+            dropdownValue = '';
+            ref.read(chosenAlgorithmProvider).clearChosenAlg();
           },
           child: const Text('Start', style: TextStyle(color: Colors.green),)),
       ),
@@ -366,10 +366,7 @@ class _DashControl extends ConsumerState<DashControl> {
                                   onChanged: (String? value) {
                                     setState(() {
                                       dropdownValue = value;
-                                      widget.properties['alg_name'] = value;
                                       ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
-                                      ref.read(dataProvider).curAlg = value;
-                                      ref.read(requestAnswerProvider).setCurAlg();
                                     });
                                   }
                               ),

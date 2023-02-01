@@ -110,60 +110,85 @@ class _BaseDataChartState extends State<BaseDataChart> {
               child: InteractiveViewer(
                 minScale: 1.0,
                 maxScale: 10.0,
-                child: LineChart(
-                  LineChartData(
-                    lineTouchData: LineTouchData(
-                        touchTooltipData: LineTouchTooltipData(
-                          fitInsideHorizontally: true,
-                          fitInsideVertically: true,
-                        )
-                    ),
-                    titlesData: FlTitlesData(
-                        show: true,
-                        topTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                                showTitles: true,
-                                getTitlesWidget: (double val, _) {
-                                  return FittedBox(fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        val.toInt().toString(),
-                                        style: const TextStyle(color: Colors.transparent),)
-                                  );
-                                }
+                child: LayoutBuilder(builder: (context, constraints) {
+                  return SizedBox(
+                    height: constraints.maxHeight,
+                    width: constraints.maxWidth,
+                    child: LineChart(
+                      LineChartData(
+                        lineTouchData: LineTouchData(
+                            touchTooltipData: LineTouchTooltipData(
+                              fitInsideHorizontally: true,
+                              fitInsideVertically: true,
                             )
                         ),
-                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false,)),
-                        leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              // interval: (maxY-minY) / 10,
-                                reservedSize: 60,
-                                showTitles: true,
-                                getTitlesWidget: (double val, TitleMeta t) {
-                                  return Tooltip(
-                                      message: val.toStringAsFixed(3),
-                                      child: Text(
-                                        val.toStringAsFixed(3),
-                                        style: const TextStyle(color: Colors.white),
-                                      )
-                                  );
-                                }
+                        titlesData: FlTitlesData(
+                            show: true,
+                            topTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget: (double val, _) {
+                                      return FittedBox(fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            val.toInt().toString(),
+                                            style: const TextStyle(color: Colors.transparent),)
+                                      );
+                                    }
+                                )
+                            ),
+                            rightTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget: (double val, _) {
+                                      return FittedBox(fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            val.toInt().toString(),
+                                            style: const TextStyle(color: Colors.transparent),)
+                                      );
+                                    }
+                                )
+                            ),
+                            leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  // interval: (maxY-minY) / 10,
+                                    reservedSize: 60,
+                                    showTitles: true,
+                                    getTitlesWidget: (double val, TitleMeta t) {
+                                      return Tooltip(
+                                          message: val.toStringAsFixed(3),
+                                          child: Align(
+                                            alignment: Alignment.center,
+                                            child: Text(
+                                              val.toStringAsFixed(3),
+                                              style: const TextStyle(color: Colors.white),
+                                            ),
+                                          )
+                                      );
+                                    }
+                                )
+                            ),
+                            bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget: (double val, _) {
+                                      return FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(val.toInt().toString(),
+                                            style: const TextStyle(color: Colors.white),
+                                          )
+                                      );
+                                    }
+                                )
                             )
                         ),
-                        bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                                showTitles: true,
-                                getTitlesWidget: (double val, _) {
-                                  return FittedBox(fit: BoxFit.scaleDown, child: Text(val.toInt().toString(), style: const TextStyle(color: Colors.white),));
-                                }
-                            )
-                        )
+                        minY: minY,
+                        maxY: maxY,
+                        lineBarsData: lineBarsData,
+                      ),
+                      swapAnimationDuration: const Duration(milliseconds: 0),
                     ),
-                    minY: minY,
-                    maxY: maxY,
-                    lineBarsData: lineBarsData,
-                  ),
-                  swapAnimationDuration: const Duration(milliseconds: 2),
-                ),
+                  );
+                }),
               ),
             ),
             Flexible(
