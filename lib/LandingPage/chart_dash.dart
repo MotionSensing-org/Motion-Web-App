@@ -129,7 +129,7 @@ class _ChartDash extends ConsumerState<ChartDash> {
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.all(2.0),
-                                    child: Text(types[i], style: const TextStyle(color: Colors.white),),
+                                    child: SelectableText(types[i], style: const TextStyle(color: Colors.white),),
                                   ),
                                 ],
                               ),

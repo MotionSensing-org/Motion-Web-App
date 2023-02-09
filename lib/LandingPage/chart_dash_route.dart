@@ -23,6 +23,16 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
   static const Color _connectedIMUColor = Colors.green;
   late final AnimationController _playPauseAnimationController;
   List<double> controlButtonSizes = [60, 60, 60];
+  Map batteryIcons = {
+    0: const Icon(Icons.battery_0_bar, color: Colors.red,),
+    15: const Icon(Icons.battery_1_bar, color: Colors.red,),
+    30: const Icon(Icons.battery_2_bar, color: Colors.red,),
+    50: const Icon(Icons.battery_3_bar, color: Colors.green,),
+    70: const Icon(Icons.battery_4_bar, color: Colors.green,),
+    80: const Icon(Icons.battery_5_bar, color: Colors.green,),
+    90: const Icon(Icons.battery_6_bar, color: Colors.green,),
+    100: const Icon(Icons.battery_full, color: Colors.green,),
+  };
 
   @override
   void initState() {
@@ -34,15 +44,81 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
   Widget build(BuildContext context) {
     List<Widget> displayItems = [];
     List<Widget> algParams = [];
+    List<Widget> batteriesWidgets = [];
+    Map batteries = ref.watch(requestAnswerProvider).batteries;
     List imus = ref.watch(imusListProvider).imus;
     bool isShort = ref.watch(shortTallProvider).isShort(context);
     bool isNarrow = ref.watch(shortTallProvider).isNarrow(context);
+    if(batteries.isNotEmpty) {
+      for (var element in imus) {
+        List batteryVals = batteryIcons.keys.toList();
+        int batteryKey = 0;
+        for(int i = 0; i < batteryVals.length-1; i++) {
+          if(batteries[element] == null) {
+            break;
+          }
+          if(batteries[element] > batteryVals[i] && batteries[element] <= batteryVals[i+1]) {
+            batteryKey = batteryVals[i+1];
+            break;
+          } else {
+            batteryKey = batteryVals[i];
+          }
+        }
+
+        batteriesWidgets.add(
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.all(Radius.circular(10)),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: const BorderRadius.all(Radius.circular(10))
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            fit: FlexFit.loose,
+                              child: Text(
+                                element.toString().substring(12),
+                                style: const TextStyle(color: Colors.black),
+                              )
+                          ),
+                          Flexible(
+                            fit: FlexFit.loose,
+                            child: Tooltip(
+                              message: '${batteries[element]}%',
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  RotatedBox(
+                                    quarterTurns: 1,
+                                    child: batteryIcons[batteryKey],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+        ),
+                    ),
+                  ),
+                ),
+              ),
+            ));
+      }
+    }
 
     widget.properties.forEach((key, value) {
       if(key == 'alg_name') {
         algParams.add(Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text(
+          child: SelectableText(
             value,
             style: Theme.of(context).textTheme.bodyText1,
           ),
@@ -51,7 +127,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
         String nameWithoutPath = value.split('\\').last;
         algParams.add(Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text(
+          child: SelectableText(
             'Output file:\n$nameWithoutPath',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyText1,
@@ -61,7 +137,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
       } else if(value != null) {
         algParams.add(Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text(
+          child: SelectableText(
               '$key: $value',
               style: Theme.of(context).textTheme.bodyText1
           ),
@@ -361,6 +437,23 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
+          Flexible(
+            flex: 1,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.mouse,
+                },),
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  shrinkWrap: true,
+                  children: batteriesWidgets,
+                ),
+              ),
+            ),
+          ),
           Expanded(
             flex: 6,
             child: Row(

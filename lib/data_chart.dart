@@ -98,7 +98,7 @@ class _BaseDataChartState extends State<BaseDataChart> {
                 fit: FlexFit.loose,
                 child: Padding(
                   padding: const EdgeInsets.all(4.0),
-                  child: Text(
+                  child: SelectableText(
                     widget.title,
                     style: const TextStyle(color: Colors.white),
                   ),
@@ -221,7 +221,7 @@ class _BaseDataChartState extends State<BaseDataChart> {
                               children: [
                                 Flexible(
                                     fit: FlexFit.loose,
-                                    child: Text(
+                                    child: SelectableText(
                                       widget.labels[index],
                                       style: const TextStyle(color: Colors.white),
                                     )

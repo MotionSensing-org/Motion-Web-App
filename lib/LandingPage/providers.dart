@@ -51,9 +51,11 @@ class RequestHandler extends ChangeNotifier {
   List<List> rows = [];
   int cyclicIterationNumber = -1;
   int dataTypesCount = 0;
+  Map batteries = {};
 
   RequestHandler(this.ref) {
     Timer.periodic(const Duration(seconds: 4), keepAliveBackendConnection);
+    Timer.periodic(const Duration(seconds: 15), updateBatteries);
   }
 
   Future<void> keepAliveBackendConnection(Timer timer) async {
@@ -94,6 +96,16 @@ class RequestHandler extends ChangeNotifier {
     Map data = await getDecodedData('get_params');
     curAlgParams = data['params'];
     notifyListeners();
+    return true;
+  }
+
+  Future<bool> updateBatteries(Timer timer) async {
+    if(connectionSuccess && !ref.read(dataProvider).stop) {
+      Map data = await getDecodedData('get_batteries');
+      batteries = data['batteries'];
+      print(batteries);
+      notifyListeners();
+    }
     return true;
   }
 
@@ -315,6 +327,10 @@ class IMUsCounter extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setImuCount(int n) {
+    imuCount = n;
+  }
+
   void dec() {
     imuCount -= 1;
     notifyListeners();
@@ -324,6 +340,14 @@ class IMUsCounter extends ChangeNotifier {
 class ShortTall extends ChangeNotifier {
   bool isShort(BuildContext context) {
     return MediaQuery.of(context).size.height <= shortHeight;
+  }
+
+  double getHeight(BuildContext context) {
+    return MediaQuery.of(context).size.height;
+  }
+
+  double getWidth(BuildContext context) {
+    return MediaQuery.of(context).size.width;
   }
 
   bool isNarrow(BuildContext context) {
@@ -339,6 +363,7 @@ class BackendProcessHandler extends ChangeNotifier {
   Future<void> startBackendProcess() async {
     if(pythonScriptPath.isEmpty) {
       pythonScriptPath = await getPythonScriptPath();
+      // print(pythonScriptPath);
     }
 
     process = await Process.start(
