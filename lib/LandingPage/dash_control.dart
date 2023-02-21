@@ -44,7 +44,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
               children: [
                 Visibility(
                   visible: outputFileForDisplay.isNotEmpty,
-                  child: Text(
+                  child: SelectableText(
                     outputFileForDisplay.split('\\').last,
                     style: Theme.of(context).textTheme.bodyText1,
                   ),
@@ -180,7 +180,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
                     padding: const EdgeInsets.all(8.0),
                     child: Column(
                       children: [
-                        Text(
+                        SelectableText(
                           curAlgParams[i]['param_name'],
                           style: Theme.of(context).textTheme.bodyText1,
                         ),
@@ -191,7 +191,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
                             child: DropdownButton(
                                 items: [for(int k = 0; k < values.length; k++) DropdownMenuItem<String>(
                                   value: values[k],
-                                  child: Text(values[k]),
+                                  child: SelectableText(values[k]),
                                 )],
                                 dropdownColor: Colors.grey.shade100.withOpacity(0.6),
                                 icon: const Icon(
@@ -237,7 +237,7 @@ class _AlgParams extends ConsumerState<AlgParams>{
             ref.read(dataProvider).filename = widget.properties['output_file'];
             if(widget.properties['output_file'] != null) {
               if(!File(widget.properties['output_file']).existsSync()) {
-                var outputFile = File(widget.properties['output_file']!!);
+                var outputFile = File(widget.properties['output_file']!);
                 List headers = [];
                 List imus = ref.watch(imusListProvider).imus;
                 var types = ref.watch(dataTypesProvider).types;
@@ -259,11 +259,15 @@ class _AlgParams extends ConsumerState<AlgParams>{
                 }
               }
             }
+
+            ref.read(dataProvider).startStopDataCollection();
             ref.read(requestAnswerProvider).setParamsMap(widget.properties);
-            await ref.read(requestAnswerProvider).setAlgParams();
+            ref.read(requestAnswerProvider).setAlgParams();
             ref.read(dataProvider).startStopDataCollection(stop: false);
             await Navigator.of(context).pushNamed('chart_dash_route');
             ref.read(requestAnswerProvider).clearOutputFileName();
+            dropdownValue = '';
+            ref.read(chosenAlgorithmProvider).clearChosenAlg();
           },
           child: const Text('Start', style: TextStyle(color: Colors.green),)),
       ),
@@ -298,7 +302,7 @@ class _DashControl extends ConsumerState<DashControl> {
     algorithms = ref.watch(requestAnswerProvider).algorithms;
     List<DropdownMenuItem<String>> algorithmsList = [for(int i = 0; i < algorithms.length; i++) DropdownMenuItem<String>(
       value: algorithms[i],
-      child: Text(
+      child: SelectableText(
         algorithms[i],
         style: Theme.of(context).textTheme.bodyText1,
       ),
@@ -362,12 +366,7 @@ class _DashControl extends ConsumerState<DashControl> {
                                   onChanged: (String? value) {
                                     setState(() {
                                       dropdownValue = value;
-                                      widget.properties['alg_name'] = value;
                                       ref.read(chosenAlgorithmProvider).setChosenAlg(value!);
-                                      ref.read(dataProvider).curAlg = value;
-                                      // ref.read(requestAnswerProvider).setCurAlg();
-                                      // ref.read(requestAnswerProvider).getCurAlg();
-                                      // ref.read(requestAnswerProvider).getAlgParams();
                                     });
                                   }
                               ),
