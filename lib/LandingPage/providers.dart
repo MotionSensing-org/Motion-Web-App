@@ -54,8 +54,8 @@ class RequestHandler extends ChangeNotifier {
   Map batteries = {};
 
   RequestHandler(this.ref) {
-    Timer.periodic(const Duration(seconds: 4), keepAliveBackendConnection);
-    Timer.periodic(const Duration(seconds: 15), updateBatteries);
+    Timer.periodic(const Duration(seconds: 3), keepAliveBackendConnection);
+    Timer.periodic(const Duration(seconds: 5), updateBatteries);
   }
 
   Future<void> keepAliveBackendConnection(Timer timer) async {
@@ -103,7 +103,7 @@ class RequestHandler extends ChangeNotifier {
     if(connectionSuccess && !ref.read(dataProvider).stop) {
       Map data = await getDecodedData('get_batteries');
       batteries = data['batteries'];
-      print(batteries);
+      // print(batteries);
       notifyListeners();
     }
     return true;
@@ -278,9 +278,11 @@ class DataProvider extends ChangeNotifier {
 
 class IMUsListProvider extends ChangeNotifier {
   List imus = [];
+  List feedbacks = [];
 
-  void updateList(List imus) {
+  void updateList(List imus, List feedbacks) {
     this.imus = imus;
+    this.feedbacks = feedbacks;
     notifyListeners();
   }
 }

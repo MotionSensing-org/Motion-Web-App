@@ -27,17 +27,17 @@ Future getDataStream() async {
 }
 
 Future<String> getPythonScriptPath() async {
-  // var files = await Directory.current.list(recursive: true).toList();
+  var files = await Directory.current.list(recursive: true).toList();
 
-  // for (var file in files) {
-  //   String path = file.path;
-  //   String name = path.split('\\').last;
-  //   if (file is File && name == 'app.py') {
-  //     return path;
-  //   }
-  // }
-  //
-  // return '';
+  for (var file in files) {
+    String path = file.path;
+    String name = path.split('\\').last;
+    if (file is File && name == 'app.py') {
+      return path;
+    }
+  }
 
-  return 'C:\\Users\\odztm\\PycharmProjects\\flaskProject\\app.py';
+  return '';
+
+  // return 'C:\\Users\\odztm\\PycharmProjects\\flaskProject\\app.py';
 }

@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:badges/badges.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iot_project/LandingPage/providers.dart';
@@ -6,7 +7,7 @@ import 'animated_indexed_stack.dart';
 import 'chart_dash.dart';
 
 //ignore: must_be_immutable
-class ChartDashRoute extends ConsumerStatefulWidget{
+class ChartDashRoute extends ConsumerStatefulWidget {
   Map properties;
   ChartDashRoute({Key? key, required this.properties}) : super(key: key);
 
@@ -24,19 +25,44 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
   late final AnimationController _playPauseAnimationController;
   List<double> controlButtonSizes = [60, 60, 60];
   Map batteryIcons = {
-    0: const Icon(Icons.battery_0_bar, color: Colors.red,),
-    15: const Icon(Icons.battery_1_bar, color: Colors.red,),
-    30: const Icon(Icons.battery_2_bar, color: Colors.red,),
-    50: const Icon(Icons.battery_3_bar, color: Colors.green,),
-    70: const Icon(Icons.battery_4_bar, color: Colors.green,),
-    80: const Icon(Icons.battery_5_bar, color: Colors.green,),
-    90: const Icon(Icons.battery_6_bar, color: Colors.green,),
-    100: const Icon(Icons.battery_full, color: Colors.green,),
+    0: const Icon(
+      Icons.battery_0_bar,
+      color: Colors.red,
+    ),
+    15: const Icon(
+      Icons.battery_1_bar,
+      color: Colors.red,
+    ),
+    30: const Icon(
+      Icons.battery_2_bar,
+      color: Colors.red,
+    ),
+    50: const Icon(
+      Icons.battery_3_bar,
+      color: Colors.green,
+    ),
+    70: const Icon(
+      Icons.battery_4_bar,
+      color: Colors.green,
+    ),
+    80: const Icon(
+      Icons.battery_5_bar,
+      color: Colors.green,
+    ),
+    90: const Icon(
+      Icons.battery_6_bar,
+      color: Colors.green,
+    ),
+    100: const Icon(
+      Icons.battery_full,
+      color: Colors.green,
+    ),
   };
 
   @override
   void initState() {
-    _playPauseAnimationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _playPauseAnimationController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
     super.initState();
   }
 
@@ -46,76 +72,85 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
     List<Widget> algParams = [];
     List<Widget> batteriesWidgets = [];
     Map batteries = ref.watch(requestAnswerProvider).batteries;
-    List imus = ref.watch(imusListProvider).imus;
+    List imus = ref.watch(imusListProvider).imus,
+    feedbacks = ref.watch(imusListProvider).feedbacks;
+    List<Widget> notifications = [];
     bool isShort = ref.watch(shortTallProvider).isShort(context);
     bool isNarrow = ref.watch(shortTallProvider).isNarrow(context);
-    if(batteries.isNotEmpty) {
-      for (var element in imus) {
+    if (batteries.isNotEmpty) {
+      for (var element in imus + feedbacks) {
         List batteryVals = batteryIcons.keys.toList();
         int batteryKey = 0;
-        for(int i = 0; i < batteryVals.length-1; i++) {
-          if(batteries[element] == null) {
+        for (int i = 0; i < batteryVals.length - 1; i++) {
+          if (batteries[element] == null) {
             break;
-          }
-          if(batteries[element] > batteryVals[i] && batteries[element] <= batteryVals[i+1]) {
-            batteryKey = batteryVals[i+1];
+          } else if (batteries[element] > batteryVals[i] &&
+              batteries[element] <= batteryVals[i + 1]) {
+            batteryKey = batteryVals[i + 1];
+            if (batteries[element] <= 30) {
+              notifications.add(
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: Text('Sensor ${element.toString().substring(12)} '
+                        'has low battery (${batteries[element]}%)',
+                      style: Theme.of(context).textTheme.bodyText1,),
+                  ),
+              );
+            }
             break;
           } else {
             batteryKey = batteryVals[i];
           }
         }
 
-        batteriesWidgets.add(
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(10)),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: const BorderRadius.all(Radius.circular(10))
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            fit: FlexFit.loose,
-                              child: Text(
-                                element.toString().substring(12),
-                                style: const TextStyle(color: Colors.black),
-                              )
-                          ),
-                          Flexible(
-                            fit: FlexFit.loose,
-                            child: Tooltip(
-                              message: '${batteries[element]}%',
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  RotatedBox(
-                                    quarterTurns: 1,
-                                    child: batteryIcons[batteryKey],
-                                  ),
-                                ],
+        batteriesWidgets.add(Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: const BorderRadius.all(Radius.circular(10))),
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                          fit: FlexFit.loose,
+                          child: Text(
+                            element.toString().substring(12),
+                            style: const TextStyle(color: Colors.black),
+                          )),
+                      Flexible(
+                        fit: FlexFit.loose,
+                        child: Tooltip(
+                          message: '${batteries[element]}%',
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              RotatedBox(
+                                quarterTurns: 1,
+                                child: batteryIcons[batteryKey],
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-        ),
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ));
+            ),
+          ),
+        ));
       }
     }
 
     widget.properties.forEach((key, value) {
-      if(key == 'alg_name') {
+      if (key == 'alg_name') {
         algParams.add(Padding(
           padding: const EdgeInsets.all(8.0),
           child: SelectableText(
@@ -123,7 +158,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
             style: Theme.of(context).textTheme.bodyText1,
           ),
         ));
-      } else if(key == 'output_file' && value != null) {
+      } else if (key == 'output_file' && value != null) {
         String nameWithoutPath = value.split('\\').last;
         algParams.add(Padding(
           padding: const EdgeInsets.all(8.0),
@@ -134,13 +169,11 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
           ),
         ));
         // ref.read(requestAnswerProvider).filename = value;
-      } else if(value != null) {
+      } else if (value != null) {
         algParams.add(Padding(
           padding: const EdgeInsets.all(8.0),
-          child: SelectableText(
-              '$key: $value',
-              style: Theme.of(context).textTheme.bodyText1
-          ),
+          child: SelectableText('$key: $value',
+              style: Theme.of(context).textTheme.bodyText1),
         ));
       }
     });
@@ -149,7 +182,8 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
       Card(
         color: Colors.black.withOpacity(0.5),
         elevation: Theme.of(context).cardTheme.elevation,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(10))),
         child: Column(
           children: algParams,
         ),
@@ -162,13 +196,12 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
         child: Card(
           color: Colors.red,
           elevation: Theme.of(context).cardTheme.elevation,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10))),
           child: TextButton(
             child: const Text(
               'Stop',
-              style: TextStyle(
-                  color: Colors.white
-              ),
+              style: TextStyle(color: Colors.white),
             ),
             onPressed: () async {
               widget.properties['output_file'] = null;
@@ -176,7 +209,10 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
               await Future.delayed(const Duration(milliseconds: 100));
               ref.read(requestAnswerProvider).connectionSuccess = false;
               ref.read(backendProcessHandler).closeBackendProcess();
-              if(mounted) Navigator.of(context).popUntil((route) => route.settings.name == 'setup_route');
+              if (mounted) {
+                Navigator.of(context)
+                    .popUntil((route) => route.settings.name == 'setup_route');
+              }
             },
           ),
         ),
@@ -189,38 +225,34 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
         child: Container(
             decoration: BoxDecoration(
                 color: Theme.of(context).cardColor,
-                borderRadius: const BorderRadius.all(Radius.circular(20))
-            ),
+                borderRadius: const BorderRadius.all(Radius.circular(20))),
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: AnimatedIndexedStack(
                   duration: const Duration(milliseconds: 500),
                   index: chosenIMUIndex,
                   children: List.generate(imus.length, (index) {
-                    return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
-                      return Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Positioned(
-                              child: Icon(
-                                Icons.show_chart,
-                                color: Colors.black.withOpacity(0.3),
-                                size: constraints.maxWidth
-                                    / (isShort || isNarrow ? 4 : 10),
-                              ),
-                            ),
-                            Visibility(
-                                visible: chosenIMUIndex == index,
-                                // maintainState: true,
-                                child: ChartDash(imu: imus[index],)
-                            )
-                          ]
-                      );
+                    return LayoutBuilder(builder:
+                        (BuildContext context, BoxConstraints constraints) {
+                      return Stack(alignment: Alignment.center, children: [
+                        Positioned(
+                          child: Icon(
+                            Icons.show_chart,
+                            color: Colors.black.withOpacity(0.3),
+                            size: constraints.maxWidth /
+                                (isShort || isNarrow ? 4 : 10),
+                          ),
+                        ),
+                        Visibility(
+                            visible: chosenIMUIndex == index,
+                            // maintainState: true,
+                            child: ChartDash(
+                              imu: imus[index],
+                            ))
+                      ]);
                     });
-                  })
-              ),
-            )
-        ),
+                  })),
+            )),
       ),
     );
 
@@ -231,17 +263,18 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
         child: Container(
             decoration: BoxDecoration(
                 color: Theme.of(context).cardColor,
-                borderRadius: const BorderRadius.all(Radius.circular(10))
-            ),
+                borderRadius: const BorderRadius.all(Radius.circular(10))),
             child: Padding(
               padding: const EdgeInsets.all(4.0),
               child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
-                  PointerDeviceKind.touch,
-                  PointerDeviceKind.mouse,
-                },),
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                  },
+                ),
                 child: ListView.builder(
-                  scrollDirection: isShort? Axis.vertical : Axis.horizontal,
+                    scrollDirection: isShort ? Axis.vertical : Axis.horizontal,
                     shrinkWrap: true,
                     itemCount: imus.length,
                     itemBuilder: (context, index) {
@@ -251,11 +284,13 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                             child: Tooltip(
                               message: imus[index],
                               child: AnimatedContainer(
-                                duration:  const Duration(milliseconds: 500),
+                                duration: const Duration(milliseconds: 500),
                                 decoration: BoxDecoration(
-                                    color: (chosenIMUIndex == index) ? Colors.black.withOpacity(0.7) : Colors.black.withOpacity(0.5),
-                                    borderRadius: const BorderRadius.all(Radius.circular(20))
-                                ),
+                                    color: (chosenIMUIndex == index)
+                                        ? Colors.black.withOpacity(0.7)
+                                        : Colors.black.withOpacity(0.5),
+                                    borderRadius: const BorderRadius.all(
+                                        Radius.circular(20))),
                                 child: Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -274,11 +309,14 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                                       Flexible(
                                         fit: FlexFit.loose,
                                         child: Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 4),
                                           child: FittedBox(
                                             fit: BoxFit.fill,
                                             child: Text(
-                                              imus[index].toString().substring(12),
+                                              imus[index]
+                                                  .toString()
+                                                  .substring(12),
                                               style: const TextStyle(
                                                 color: Colors.grey,
                                               ),
@@ -295,13 +333,11 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                               setState(() {
                                 chosenIMUIndex = index;
                               });
-                            }
-                        ),
+                            }),
                       );
                     }),
               ),
-            )
-        ),
+            )),
       ),
     );
 
@@ -311,42 +347,42 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
         fit: FlexFit.loose,
         child: Padding(
           padding: const EdgeInsets.all(4.0),
-          child: Builder(
-              builder: (context) {
-                return Tooltip(
-                  message: 'Imu status',
-                  child: ClipOval(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: AnimatedContainer(
-                        onEnd: (){
-                          setState(() {
-                            controlButtonSizes[0] = 60;
-                          });
-                        },
-                        alignment: Alignment.center,
-                        width: controlButtonSizes[0],
-                        height: controlButtonSizes[0],
-                        duration:  const Duration(milliseconds: 100),
-                        color: Colors.black.withOpacity(0.7),
-                        child: FittedBox(
-                          fit: BoxFit.fill,
-                          child: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  controlButtonSizes[0] += 10;
-                                });
-                                Scaffold.of(context).openDrawer();
-                              },
-                              icon: const Icon(Icons.settings, color: Colors.white,)
-                          ),
-                        ),
-                      ),
+          child: Builder(builder: (context) {
+            return Tooltip(
+              message: 'Settings',
+              child: ClipOval(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: AnimatedContainer(
+                    onEnd: () {
+                      setState(() {
+                        controlButtonSizes[0] = 60;
+                      });
+                    },
+                    alignment: Alignment.center,
+                    width: controlButtonSizes[0],
+                    height: controlButtonSizes[0],
+                    duration: const Duration(milliseconds: 100),
+                    color: Colors.black.withOpacity(0.7),
+                    child: FittedBox(
+                      fit: BoxFit.fill,
+                      child: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              controlButtonSizes[0] += 10;
+                            });
+                            Scaffold.of(context).openDrawer();
+                          },
+                          icon: const Icon(
+                            Icons.settings,
+                            color: Colors.white,
+                          )),
                     ),
                   ),
-                );
-              }
-          ),
+                ),
+              ),
+            );
+          }),
         ),
       ),
       Flexible(
@@ -354,38 +390,59 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
         fit: FlexFit.loose,
         child: Padding(
             padding: const EdgeInsets.all(4.0),
-            child: ClipOval(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: AnimatedContainer(
-                  onEnd: (){
-                    setState(() {
-                      controlButtonSizes[1] = 60;
-                    });
-                  },
-                  alignment: Alignment.center,
-                  width: controlButtonSizes[1],
-                  height: controlButtonSizes[1],
-                  duration:  const Duration(milliseconds: 100),
-                  color: Colors.black.withOpacity(0.7),
-                  child: FittedBox(
-                    fit: BoxFit.fill,
-                    child: IconButton(
-                      icon: const Icon(Icons.notifications, color: Colors.white,),
-                      onPressed: () {
-                        setState(() {
-                          controlButtonSizes[1] += 10;
-                        });
-                      },
+            child: Badge(
+              badgeContent: Text('${notifications.length}',
+                style: Theme.of(context).textTheme.bodyText1,
+              ),
+              showBadge: notifications.isNotEmpty,
+              child: ClipOval(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: AnimatedContainer(
+                    onEnd: () {
+                      setState(() {
+                        controlButtonSizes[1] = 60;
+                      });
+                    },
+                    alignment: Alignment.center,
+                    width: controlButtonSizes[1],
+                    height: controlButtonSizes[1],
+                    duration: const Duration(milliseconds: 100),
+                    color: Colors.black.withOpacity(0.7),
+                    child: FittedBox(
+                      fit: BoxFit.fill,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.notifications,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          showDialog(
+                              context: context,
+                              builder: (context) => BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                  child: AlertDialog(
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: notifications,
+                                    ),
+                                  )
+                              )
+                          );
+                          setState(() {
+                            controlButtonSizes[1] += 10;
+                          });
+                        },
+                      ),
                     ),
                   ),
                 ),
               ),
-            )
-        ),
+            )),
       ),
       Flexible(
-        flex: 1,
+          flex: 1,
           fit: FlexFit.loose,
           child: Padding(
             padding: const EdgeInsets.all(4.0),
@@ -393,7 +450,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: AnimatedContainer(
-                  onEnd: (){
+                  onEnd: () {
                     setState(() {
                       controlButtonSizes[2] = 60;
                     });
@@ -401,7 +458,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                   alignment: Alignment.center,
                   width: controlButtonSizes[2],
                   height: controlButtonSizes[2],
-                  duration:  const Duration(milliseconds: 100),
+                  duration: const Duration(milliseconds: 100),
                   color: Colors.black.withOpacity(0.7),
                   child: FittedBox(
                     fit: BoxFit.fill,
@@ -409,14 +466,13 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                       icon: AnimatedIcon(
                           color: Colors.white,
                           icon: AnimatedIcons.pause_play,
-                          progress: _playPauseAnimationController
-                      ),
+                          progress: _playPauseAnimationController),
                       onPressed: () {
                         setState(() {
                           controlButtonSizes[2] += 10;
                         });
                         ref.read(playPauseProvider).playPause();
-                        if(ref.read(playPauseProvider).pause) {
+                        if (ref.read(playPauseProvider).pause) {
                           _playPauseAnimationController.forward();
                         } else {
                           _playPauseAnimationController.reverse();
@@ -427,8 +483,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
                 ),
               ),
             ),
-          )
-      ),
+          )),
     ];
 
     Widget dash = Padding(
@@ -442,10 +497,12 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: {
-                  PointerDeviceKind.touch,
-                  PointerDeviceKind.mouse,
-                },),
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                  },
+                ),
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   shrinkWrap: true,
@@ -540,8 +597,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
-              image: AssetImage('assets/images/bg.png')
-          ),
+              image: AssetImage('assets/images/bg.png')),
           dash,
           // Positioned(
           //   bottom: 0,
