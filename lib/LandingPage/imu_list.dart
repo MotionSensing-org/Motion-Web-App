@@ -83,14 +83,45 @@ class _IMUListState extends ConsumerState<IMUList> {
                   child: Center(
                     child: FractionallySizedBox(
                       widthFactor: 0.7,
-                      child: TextFormField(
-                        style: TextStyle(color: Colors.black.withOpacity(0.6)),
-                        textAlign: TextAlign.center,
-                        controller: widget.addedIMUs[index].controller..text = widget.addedIMUs[index].imuMac,
-                        onChanged: (value) {
-                          widget.addedIMUs[index].imuMac = value;
-                          // ref.read(imusProvider).addIMU(value, isFeedback: widget.isFeedbackList);
-                        },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            fit: FlexFit.loose,
+                            child: TextFormField(
+                              style: TextStyle(color: Colors.black.withOpacity(0.6)),
+                              textAlign: TextAlign.center,
+                              controller: widget.addedIMUs[index].controller..text = widget.addedIMUs[index].imuMac,
+                              onChanged: (value) {
+                                widget.addedIMUs[index].imuMac = value;
+                                // ref.read(imusProvider).addIMU(value, isFeedback: widget.isFeedbackList);
+                              },
+                            ),
+                          ),
+                          Flexible(
+                            fit: FlexFit.loose,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Tooltip(
+                                message: 'Remove',
+                                child: Card(
+                                  color: Colors.red,
+                                  shape: const CircleBorder(),
+                                  child: IconButton(onPressed: (){
+                                    setState(() {
+                                      if(!widget.isFeedbackList) {
+                                        ref.read(imusCounter).dec();
+                                      }
+
+                                      widget.addedIMUs.removeAt(index);
+                                    });
+                                  }, icon: const Icon(Icons.delete, color: Colors.white,)),
+                                ),
+                              ),
+                            ),
+                          )
+                        ],
                       ),
                     ),
                   ),

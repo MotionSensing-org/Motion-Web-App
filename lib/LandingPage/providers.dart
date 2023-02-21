@@ -155,6 +155,7 @@ class DataProvider extends ChangeNotifier {
   Ref ref;
   String? filename;
   bool stop = true;
+  bool feedbackActive = false;
   bool shouldInitBuffers = false;
   final int bufferSize = 500;
   Mutex m = Mutex();
@@ -215,6 +216,14 @@ class DataProvider extends ChangeNotifier {
     }
 
     var decodedData = jsonDecode(data);
+    if (decodedData['feedback_active'] == 'Yes') {
+      feedbackActive = true;
+      notifyListeners();
+    } else {
+      feedbackActive = false;
+      notifyListeners();
+    }
+
     for (var imu in imus) {
       dataTypes.forEach((key, value) async {
         for (var type in value) {

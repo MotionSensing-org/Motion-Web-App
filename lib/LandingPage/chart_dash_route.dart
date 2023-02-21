@@ -77,6 +77,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
     List<Widget> notifications = [];
     bool isShort = ref.watch(shortTallProvider).isShort(context);
     bool isNarrow = ref.watch(shortTallProvider).isNarrow(context);
+    bool showFeedback = ref.watch(dataProvider).feedbackActive;
     if (batteries.isNotEmpty) {
       for (var element in imus + feedbacks) {
         List batteryVals = batteryIcons.keys.toList();
@@ -341,7 +342,7 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
       ),
     );
 
-    List<Widget> controlButtonList = [
+    List<Widget> controlList = [
       Flexible(
         flex: 1,
         fit: FlexFit.loose,
@@ -484,6 +485,32 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
               ),
             ),
           )),
+      Flexible(
+          child: Visibility(
+              visible: showFeedback,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.all(Radius.circular(10)),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: const BorderRadius.all(Radius.circular(10))
+                      ),
+                      child: const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text(
+                          'Feedback is active',
+                          style: TextStyle(color: Colors.green),),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+          )
+      ),
     ];
 
     Widget dash = Padding(
@@ -559,8 +586,8 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
               padding: const EdgeInsets.all(4.0),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: controlButtonList,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: controlList,
               ),
             ),
           )

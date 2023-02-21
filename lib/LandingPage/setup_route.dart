@@ -479,6 +479,104 @@ class _SetupPage extends ConsumerState<SetupPage>{
                                                                           ),
                                                                         ),
                                                                       ),
+                                                                      Row(
+                                                                        mainAxisSize: MainAxisSize.min,
+                                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                                        children: [
+                                                                          Flexible(
+                                                                            fit: FlexFit.loose,
+                                                                            child: Tooltip(
+                                                                              message: 'Delete configuration',
+                                                                              child: Card(
+                                                                                color: Colors.red,
+                                                                                shape: const CircleBorder(),
+                                                                                child: IconButton(onPressed: () async {
+                                                                                  await editJsonFile(imuConfigFile, configList[index], delete: true);
+                                                                                  showDialog(
+                                                                                      context: context,
+                                                                                      builder: (context) => BackdropFilter(
+                                                                                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                                                                          child: AlertDialog(
+                                                                                            content: Padding(
+                                                                                              padding: const EdgeInsets.all(8.0),
+                                                                                              child: Column(
+                                                                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                                                                mainAxisSize: MainAxisSize.min,
+                                                                                                children: [
+                                                                                                  const Padding(
+                                                                                                    padding: EdgeInsets.all(8.0),
+                                                                                                    child: Text(
+                                                                                                      'Configuration deleted',
+                                                                                                      style: TextStyle(
+                                                                                                        color: Colors.green,
+                                                                                                      ),
+                                                                                                    ),
+                                                                                                  ),
+                                                                                                  Padding(
+                                                                                                    padding: const EdgeInsets.all(8.0),
+                                                                                                    child: FloatingActionButton(
+                                                                                                        heroTag: 'Return after imu config delete',
+                                                                                                        backgroundColor: Colors.black.withOpacity(0.6),
+                                                                                                        child: const FittedBox(
+                                                                                                          fit: BoxFit.scaleDown,
+                                                                                                          child: Padding(
+                                                                                                            padding: EdgeInsets.all(8.0),
+                                                                                                            child: Text(
+                                                                                                              'Back',
+                                                                                                              style: TextStyle(color: Colors.white),
+                                                                                                            ),
+                                                                                                          ),
+                                                                                                        ),
+                                                                                                        onPressed: () {
+                                                                                                          Navigator.of(context).popUntil((route) => route.settings.name == 'setup_route');
+                                                                                                        }
+                                                                                                    ),
+                                                                                                  ),
+                                                                                                ],
+                                                                                              ),
+                                                                                            ),
+                                                                                          )
+                                                                                      )
+                                                                                  );
+                                                                                }, icon: const Icon(Icons.delete, color: Colors.white,)),
+                                                                              ),
+                                                                            ),
+                                                                          ),
+                                                                          Flexible(
+                                                                            fit: FlexFit.loose,
+                                                                            child: Tooltip(
+                                                                              message: 'Select configuration',
+                                                                              child: Card(
+                                                                                color: Colors.green,
+                                                                                shape: const CircleBorder(),
+                                                                                child: IconButton(onPressed: () {
+                                                                                  List imusList = jsonData[configList[index]]['imus'];
+                                                                                  List feedbacksList = jsonData[configList[index]]['feedbacks'];
+                                                                                  ref.read(imusCounter).setImuCount(imusList.length);
+                                                                                  widget.addedIMUs['imus']?.clear();
+                                                                                  widget.addedIMUs['feedbacks']?.clear();
+                                                                                  for(int i = 0; i < imusList.length; i++) {
+                                                                                    widget.addedIMUs['imus']?.add(TextFieldClass(
+                                                                                      controller: TextEditingController(),
+                                                                                    ));
+                                                                                    widget.addedIMUs['imus']?.last.imuMac = imusList[i];
+                                                                                  }
+                                                                                  for(int i = 0; i < feedbacksList.length; i++) {
+                                                                                    widget.addedIMUs['feedbacks']?.add(TextFieldClass(
+                                                                                      controller: TextEditingController(),
+                                                                                    ));
+                                                                                    widget.addedIMUs['feedbacks']?.last.imuMac = feedbacksList[i];
+                                                                                  }
+
+                                                                                  expanded[0] = imusList.isNotEmpty;
+                                                                                  expanded[1] = feedbacksList.isNotEmpty;
+                                                                                  Navigator.of(context).popUntil((route) => route.settings.name == 'setup_route');
+                                                                                }, icon: const Icon(Icons.check_outlined, color: Colors.white,)),
+                                                                              ),
+                                                                            ),
+                                                                          ),
+                                                                        ],
+                                                                      )
                                                                     ]
                                                                 ),
                                                               ),
