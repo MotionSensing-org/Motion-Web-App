@@ -6,6 +6,10 @@ import 'package:iot_project/LandingPage/providers.dart';
 import 'animated_indexed_stack.dart';
 import 'chart_dash.dart';
 
+/*Create a chart dashboard widget with different features such as battery icons, IMU colors, and control button sizes.
+It also provides support for animating these widgets.(It indicates the nivel of the battery of each IMUS and indicate us if their battery is low by 
+sending an alert to the screen when it is under a certain value of battery)*/
+
 //ignore: must_be_immutable
 class ChartDashRoute extends ConsumerStatefulWidget {
   Map properties;
@@ -256,6 +260,17 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
             )),
       ),
     );
+    
+    /*imuToggleButtons: a scrollable list of toggle buttons that represents a list of IMUs.
+    The widget has the following structure:
+-A ClipRRect widget with rounded corners that wraps the entire widget.
+-A BackdropFilter widget that applies a blur effect to its child.
+-A Container widget with rounded corners and a card-like appearance.
+-A ScrollConfiguration widget that overrides the default scrolling behavior of its child.
+-A ListView.builder widget that builds a list of toggle buttons representing the IMUs.
+-Each toggle button is a GestureDetector widget that responds to tap events.
+-Each toggle button has an AnimatedContainer widget with a black background and rounded corners that changes its opacity based on whether it's currently selected or not.
+-Each toggle button also has an icon (sensors) and a text label that displays the name of the corresponding IMU.*/
 
     Widget imuToggleButtons = ClipRRect(
       borderRadius: const BorderRadius.all(Radius.circular(20)),
@@ -341,6 +356,15 @@ class _ChartDashRoute extends ConsumerState<ChartDashRoute>
             )),
       ),
     );
+    
+   /*a list of Flexible widgets, each containing a button with different functionalities.
+   The buttons are created using ClipOval to create a circular shape, and BackdropFilter to add a blur effect.
+-The first button shows a Tooltip with the message "Settings" when hovered over, and when clicked, it opens a drawer using Scaffold.of(context).openDrawer().
+-The second button shows a badge with a count of notifications, and when clicked, it displays an AlertDialog with a list of notifications.
+-The third button toggles between a play and pause icon, and when clicked, it updates a playPauseProvider state using ref.read(playPauseProvider).playPause().
+-The fourth button is only visible if showFeedback is true, and displays a message that feedback is active.
+The AnimatedContainer widget is used for each button to create a smooth animation when the button size changes.
+The animation is triggered when the button is clicked, and it increases the size of the button by 10.*/
 
     List<Widget> controlList = [
       Flexible(
