@@ -9,12 +9,6 @@ import 'animated_indexed_stack.dart';
 import 'imu_list.dart';
 import 'dart:io';
 
-/*The SetupPage widget is used to create a page that allows users to add IMUs and feedback sensors.
-The page consists of two ExpansionPanels, one for IMUs and the other for feedback sensors.
-Each panel has a header and a body.
-The body contains a list of IMUList widgets that allow the user to add IMUs or feedback sensors to the list.
-The Save Config button at the bottom of the page is used to save the configuration.*/
-
 //ignore: must_be_immutable
 class SetupPage extends ConsumerStatefulWidget{
   Map properties;
@@ -99,6 +93,31 @@ class _SetupPage extends ConsumerState<SetupPage>{
                         ),
                       ],
                     ),
+                    // ListView(
+                    //   shrinkWrap: true,
+                    //   children: [
+                    //     ExpansionTile(
+                    //       title: const Text('Add IMUs',),
+                    //       maintainState: true,
+                    //       initiallyExpanded: expanded[0],
+                    //       onExpansionChanged: (value) {
+                    //         setState(() {
+                    //           expanded[0] = value;
+                    //         });
+                    //       },
+                    //       children: [
+                    //         IMUList(addedIMUs: widget.addedIMUs['imus']!,),
+                    //       ],
+                    //     ),
+                    //     ExpansionTile(
+                    //       title: const Text('Add Feedback sensors',),
+                    //       initiallyExpanded: expanded[1],
+                    //       children: [
+                    //         IMUList(isFeedbackList: true, addedIMUs: widget.addedIMUs['feedbacks']!,),
+                    //       ],
+                    //     ),
+                    //   ],
+                    // ),
                   ),
                   Flexible(
                     fit: FlexFit.loose,
@@ -137,19 +156,7 @@ class _SetupPage extends ConsumerState<SetupPage>{
                                   );
                                   return;
                                 }
-/*show an alert dialog with a text field and a button to save a new configuration.
-The user can enter a name for the new configuration in the text field.
-Once the user enters a name and presses the "Save" button, the code calls the editJsonFile function with the imuConfigFile,
-the name, and the newConfig as arguments.
-The editJsonFile function updates a JSON file with the new configuration information.
-If the name is empty, a separate dialog is shown indicating that the name cannot be empty.
-If the save operation is successful, a confirmation dialog is shown with a "Continue" button that, 
-when pressed, navigates the user to the "setup_route" screen.
 
-The newConfig variable is created using the map method of a Map object named addedIMUs.
-For each key-value pair in addedIMUs, the map method applies a function that creates a new MapEntry with the same key 
-and a list of imuMac values extracted from each element of the corresponding value.
-The resulting Map is used as the newConfig argument for the editJsonFile function.*/
                                 String name = '';
                                 Map newConfig = widget.addedIMUs.map((key, value)
                                 => MapEntry(key, value.map((e) => e.imuMac).toList()));
@@ -271,19 +278,6 @@ The resulting Map is used as the newConfig argument for the editJsonFile functio
                               }
                           ),
                         ),
-                        /*creates a floating action button with the label "Load Config" that, when pressed, loads a JSON file 
-                        containing IMU configurations and displays them in a scrollable list.
-                        If the list is empty, it displays a dialog box with an error message.
-                        The floating action button has a black background with 60% opacity and white text.
-                        When the button is pressed, the code retrieves the IMU configuration data from a JSON file,
-                        converts it to a Map data type, and then converts the keys of the Map to a List. If the list is empty, it shows an error message.
-                        If the list is not empty, the code displays a scrollable list of the configurations in a dialog box. 
-                        The list is contained within a BackdropFilter widget with a blur effect applied to it. 
-                        The list is scrollable and has a width and height that is set based on the size of the screen.
-                        Each configuration in the list is wrapped in a Slidable widget, which allows the user to swipe left or right to reveal additional options.
-                        If the user swipes right, they can choose to delete the configuration from the list. 
-                        If they swipe left, they can select the configuration and view its details.
-                        Overall,it provides a user interface for loading and selecting IMU configurations.*/
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: FloatingActionButton(
@@ -518,15 +512,6 @@ The resulting Map is used as the newConfig argument for the editJsonFile functio
                                                                                                       ),
                                                                                                     ),
                                                                                                   ),
-                                                                        /*This code is defining a Padding widget that contains the FloatingActionButton.
-                                                                        The FloatingActionButton has a background color, child text, and an onPressed 
-                                                                        callback function that pops the current route off the navigator's stack until 
-                                                                        it reaches a route with the name setup_route. The Padding widget is used to create
-                                                                        some space around the FloatingActionButton.
-
-                                                                        The code then defines a ExpansionTile widget that contains the SelectableText widgets 
-                                                                        for the IMUs and Feedbacks list items of a given configuration. When the ExpansionTile is expanded,
-                                                                        it displays the SelectableText widgets for the IMUs and Feedbacks list items.*/
                                                                                                   Padding(
                                                                                                     padding: const EdgeInsets.all(8.0),
                                                                                                     child: FloatingActionButton(
@@ -611,18 +596,6 @@ The resulting Map is used as the newConfig argument for the editJsonFile functio
                               }
                           ),
                         ),
-                        
-                        /*a screen that allows the user to connect to a set of IMUs and then proceed to the next screen.
-                        The screen consists of a background image, a title, a description, a stepper that tracks the progress of the user, and two buttons.
-                        -The first button allows the user to add or remove IMUs from a list. 
-                        The onPressed method of this button shows a dialog box with an error message if the list is empty.
-                        If the list is not empty and the back-end process is not running, the back-end process is started,
-                        and then the user is taken to the screen where the IMUs can be configured.
-                        -The second button allows the user to proceed to the next screen if all necessary steps are completed.
-                        The onPressed method of this button calls several methods that retrieve algorithm parameters and data types,
-                        and then navigate to the next screen.
-                        If the user has not completed all the necessary steps, the button is disabled, and its color is grayed out.
-                        The size of the two buttons is animated when they are clicked. */
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: FloatingActionButton(
