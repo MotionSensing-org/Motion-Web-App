@@ -4,26 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iot_project/LandingPage/providers.dart';
 
-/*displays a screen with information about the state of a connection to IMUs (Inertial Measurement Units).
-The widget is a stateful widget that can display one of three states:
-1) waiting for completion, 2) successfully connected to IMUs, or 3) failed to connect to IMUs.*/
-
 //ignore: must_be_immutable
 class IMUsRoute extends ConsumerStatefulWidget{
-  IMUsRoute({super.key, required this.addedIMUs, required this.properties}); 
+  IMUsRoute({super.key, required this.addedIMUs, required this.properties});
   Map<String, List<TextFieldClass>> addedIMUs = {'imus': [], 'feedbacks': []};
-  Map properties; //two maps as properties for holding data: addedIMUs and properties
+  Map properties;
 
   @override
   ConsumerState<IMUsRoute> createState() => _IMUsRoute();
 }
 
-
 class _IMUsRoute extends ConsumerState<IMUsRoute> {
   final stopwatch = Stopwatch();
 
-  /*The initState() method is also overridden to start a timer (stopwatch) 
-that tracks the elapsed time since the widget was initialized.*/
   @override
   void initState() {
     stopwatch.start();
