@@ -4,14 +4,13 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:iot_project/LandingPage/providers.dart';
 
 
-/*We define here a widget named "IMUList" 
 //ignore: must_be_immutable
 class IMUList extends ConsumerStatefulWidget {
   IMUList({Key? key, required this.addedIMUs, this.isFeedbackList=false}) : super(key: key);
   List<TextFieldClass> addedIMUs;
   bool isFeedbackList;
 
-  List<String> getList() => addedIMUs.map((e) => e.imuMac).toList(); // Returns a list of the IMU MAC addresses from the addedIMUs list.
+  List<String> getList() => addedIMUs.map((e) => e.imuMac).toList();
 
   @override
   ConsumerState<IMUList> createState() => _IMUListState();
@@ -27,7 +26,7 @@ class _IMUListState extends ConsumerState<IMUList> {
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: FloatingActionButton(  //A FloatingActionButton used to add new items to the list
+          child: FloatingActionButton(
             heroTag: 'Add ${widget.isFeedbackList ? 'feedback' : 'IMU'}',
             backgroundColor: Colors.black.withOpacity(0.6),
             onPressed: () {
@@ -45,13 +44,13 @@ class _IMUListState extends ConsumerState<IMUList> {
             child: const Icon(Icons.plus_one),
           ),
         ),
-        Flexible( //A ListView used to display the items in the list.
+        Flexible(
           child: ListView.builder(
               shrinkWrap: true,
               itemCount: widget.addedIMUs.length,
               itemBuilder: (context, index) {
                 return Slidable(
-                  key: UniqueKey(), //The Slidable widget provides an action pane that slides out from the left.
+                  key: UniqueKey(),
                   startActionPane: ActionPane(
                       dismissible: DismissiblePane(onDismissed: () {
                         setState(() {
@@ -81,7 +80,7 @@ class _IMUListState extends ConsumerState<IMUList> {
                         )
                       ]
                   ),
-                  child: Center( // Each item in the list is a row containing a text field and a delete button.
+                  child: Center(
                     child: FractionallySizedBox(
                       widthFactor: 0.7,
                       child: Row(
