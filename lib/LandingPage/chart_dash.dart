@@ -54,6 +54,17 @@ class _ChartDash extends ConsumerState<ChartDash> {
   List canSwitchToChart = [];
   List types = [];
 
+  /*
+  Create a widget that displays a stack of charts,where the user can switch
+  between different chart types by tapping on each chart.
+
+  The createStack function takes two parameters:
+  a BuildContext and a BoxConstraints. It returns a Widget that
+  contains a SizedBox with the given constraints and
+  a Stack of charts that are created using the List.generate method.
+  Each chart is an AnimatedPositioned widget that animates its position and size
+  based on whether it is tapped or not.
+  */
   Widget createStack(BuildContext context, BoxConstraints constraints) {
     var height = constraints.maxHeight;
     var width = constraints.maxWidth;

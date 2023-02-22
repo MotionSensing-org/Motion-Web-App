@@ -57,7 +57,10 @@ class RequestHandler extends ChangeNotifier {
     Timer.periodic(const Duration(seconds: 3), keepAliveBackendConnection);
     Timer.periodic(const Duration(seconds: 5), updateBatteries);
   }
-
+  /*
+   This function sends a 'keepalive' query to the server to ensure that the connection is still active.
+   It is called periodically at a set interval specified by the Timer.
+   */
   Future<void> keepAliveBackendConnection(Timer timer) async {
     if(connectionSuccess && ref.read(dataProvider).stop) {
       await getData(query: 'keepalive');
@@ -80,6 +83,9 @@ class RequestHandler extends ChangeNotifier {
     paramsToSet = params;
   }
 
+  /*
+  This function sends a query to the server and returns the decoded response as a Map object.
+   */
   Future<Map> getDecodedData(String query) async {
     var data = await getData(query: query);
     return jsonDecode(data);
@@ -99,6 +105,10 @@ class RequestHandler extends ChangeNotifier {
     return true;
   }
 
+  /*
+   This function retrieves the battery information from the server and updates the local copy.
+   It also notifies the listeners of any changes.
+   */
   Future<bool> updateBatteries(Timer timer) async {
     if(connectionSuccess && !ref.read(dataProvider).stop) {
       Map data = await getDecodedData('get_batteries');
@@ -163,6 +173,7 @@ class DataProvider extends ChangeNotifier {
   late Timer t;
 
   DataProvider(this.ref) {
+    // Set up timer for collecting data
     t = Timer.periodic(const Duration(milliseconds: 40), updateDataSource);
   }
 

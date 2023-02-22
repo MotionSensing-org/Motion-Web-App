@@ -4,6 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iot_project/LandingPage/providers.dart';
 
+/*
+Displays a screen with information about the state of a connection to IMUs (Inertial Measurement Units).
+The widget is a stateful widget that can display one of three states:
+1) waiting for completion.
+2) successfully connected to IMUs.
+3) failed to connect to IMUs.
+*/
+
 //ignore: must_be_immutable
 class IMUsRoute extends ConsumerStatefulWidget{
   IMUsRoute({super.key, required this.addedIMUs, required this.properties});
