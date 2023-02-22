@@ -1,16 +1,11 @@
-# iot_project
+# Motion Sensing
 
-A new Flutter project.
+This repo includes the implementation of the front-end Flutter app of our Motion Sensing app.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+In order to run the app you need to have Python installed.
+In order to build the app follow these steps:
+1. Copy the Python .py files from the Motion-Backend repo into the assets folder.
+2. run flutter build windwos.
+3. The app will then be built in #path to the project folder#\build\windows\runner\Release.
