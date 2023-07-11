@@ -7,9 +7,36 @@ import 'LandingPage/dash_control.dart';
 import 'LandingPage/imus_route.dart';
 import 'LandingPage/providers.dart';
 import 'LandingPage/setup_route.dart';
+import 'dart:developer';
+
+void redirectLogsToFile(String logFilePath) {
+  // Open the log file in append mode
+  File logFile = File(logFilePath);
+  IOSink logSink = logFile.openWrite(mode: FileMode.append);
+
+  // Create a new ZoneSpecification to override the print method
+  var spec = ZoneSpecification(
+    print: (Zone self, ZoneDelegate parent, Zone zone, String line) {
+      logSink.writeln(line);
+    },
+  );
+
+  // Run the app inside the modified zone
+  runZonedGuarded(() {
+    runApp(ProviderScope(child: MyApp()));
+  }, (dynamic error, StackTrace stackTrace) {
+    logSink.writeln('Unhandled error: $error');
+    logSink.writeln(stackTrace);
+  });
+}
+
 
 void main() {
-  runApp(ProviderScope(child: MyApp()));
+  String logFilePath = './log.txt';
+
+  redirectLogsToFile(logFilePath);
+
+  // runApp(ProviderScope(child: MyApp()));
 }
 
 class CustomRoute extends MaterialPageRoute {

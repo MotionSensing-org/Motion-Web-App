@@ -26,6 +26,13 @@ Future getDataStream() async {
   return response.body;
 }
 
+void writeLineToFile(String filePath, String line) {
+  File file = File(filePath);
+
+  // Open the file in write mode and append the line
+  file.writeAsStringSync('$line\n', mode: FileMode.append);
+}
+
 Future<String> getPythonScriptPath() async {
   var files = await Directory.current.list(recursive: true).toList();
 
@@ -33,6 +40,8 @@ Future<String> getPythonScriptPath() async {
     String path = file.path;
     String name = path.split('\\').last;
     if (file is File && name == 'app.py') {
+      String filePath = './scripy_path.txt';
+      writeLineToFile(filePath, path);
       return path;
     }
   }

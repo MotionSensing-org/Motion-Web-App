@@ -78,7 +78,7 @@ flutter:
     - assets/images/iot-banner.jpg
     - assets/images/ms-image-one.png
     - assets/images/logo_round.png
-    - assets/backend/algorithms.py
+    - assets/backend/algorithms/
     - assets/backend/app.py
     - assets/backend/base_algorithm_class.py
     - assets/backend/consts.py
